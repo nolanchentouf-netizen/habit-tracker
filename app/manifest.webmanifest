@@ -25,9 +25,20 @@
   ],
   "shortcuts": [
     {
-      "name": "Temps restant",
-      "short_name": "Temps",
-      "url": "./#time",
+      "name": "Agenda du jour",
+      "short_name": "Agenda",
+      "url": "./#agenda",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Réviser mes fiches",
+      "short_name": "Réviser",
+      "url": "./#study",
       "icons": [
         {
           "src": "icon-192.png",
@@ -50,17 +61,6 @@
       "name": "Séance du jour",
       "short_name": "Sport",
       "url": "./#sport",
-      "icons": [
-        {
-          "src": "icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Journal",
-      "short_name": "Journal",
-      "url": "./#journal",
       "icons": [
         {
           "src": "icon-192.png",

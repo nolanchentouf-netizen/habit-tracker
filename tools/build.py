@@ -51,8 +51,8 @@ manifest = {
     "background_color": "#0a0a0c", "theme_color": "#0a0a0c",
     "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
               {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}],
-    "shortcuts": [shortcut("Temps restant", "Temps", "time"), shortcut("Ajouter un repas", "Repas", "food"),
-                  shortcut("Séance du jour", "Sport", "sport"), shortcut("Journal", "Journal", "journal")],
+    "shortcuts": [shortcut("Agenda du jour", "Agenda", "agenda"), shortcut("Réviser mes fiches", "Réviser", "study"),
+                  shortcut("Ajouter un repas", "Repas", "food"), shortcut("Séance du jour", "Sport", "sport")],
 }
 with open(os.path.join(OUT, "manifest.webmanifest"), "w") as f:
     json.dump(manifest, f, ensure_ascii=False, indent=2)
