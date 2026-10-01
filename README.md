@@ -1,25 +1,26 @@
 # Habit Pix
 
-Maquette d'une appli perso pour créer des habitudes, style pixel / rétro.
+Appli perso pour créer des habitudes, style pixel / rétro. Tout est dans `index.html` (un seul fichier). Les données restent dans le navigateur.
 
-Ouvrir `index.html` dans un navigateur (tout est dans un seul fichier, les données sont gardées dans le navigateur).
+## Onglets
+- **Habitudes** : cartes avec grille sur 22 semaines, série 🔥, filtres par catégorie, filtre « Restant » (Matin / Midi / Soir), recherche, tri.
+  - Bouton **+** : catalogue de 36 suivis prêts à ajouter (santé, sport, nutrition, esprit, productivité, maison, social, finances) ou suivi personnalisé.
+  - 3 types de suivi : **oui / non**, **compteur** (ex. 8 verres d'eau, 50 pompes) et **auto** (protéines, calories, séance de sport, remplis depuis les autres onglets).
+  - Touche l'icône d'une carte pour la modifier ou la supprimer.
+- **Sport** :
+  - séance du jour avec cases à cocher par exercice et charge (kg) notée ;
+  - calendrier mensuel : séances prévues, faites, manquées ; touche un jour pour changer la séance ; « Planifier 4 semaines » ; export `.ics` vers ton agenda (dans Claude) ;
+  - **Coach IA** : génère un programme selon objectif, niveau, jours, durée, matériel et tes infos (blessures…), et le modifie sur demande (« remplace le squat, j'ai mal au genou »). Bouton Annuler.
+  - programme entièrement modifiable : jours d'entraînement, séances, exercices, séries, reps, kg.
+- **Nutrition** : calories, protéines, glucides, lipides par rapport à tes objectifs ; ajout par aliment (base de 33 aliments, valeurs recalculées selon la quantité) ou à la main ; « Décris ton repas » estimé par l'IA ; calcul des objectifs (Mifflin-St Jeor) ; poids du matin et notes du jour.
+- **Journal** : humeur, note du jour, revue de la semaine.
+- **Analyses** : séances sur 30 jours, calories moyennes, poids, graphiques 7 jours (habitudes, calories, protéines), statistiques par suivi, remise à zéro.
+- **Méthodes** (ampoule en haut) : les techniques utilisées par l'appli.
 
-## Écrans
-- **Habitudes** : cartes avec grille type GitHub (22 semaines), série 🔥, bouton ✓, filtres par catégorie, recherche, tri.
-- **Restant** : ce qu'il reste à faire, classé Matin / Midi / Soir.
-- **Journal** : humeur + note du jour, revue de la semaine (3 questions).
-- **Analyses** : % des 7 derniers jours, taux sur 30 jours, série actuelle et record.
-- **Méthodes** : les techniques intégrées à l'appli.
+## IA
+Ouverte dans Claude (lien d'artefact), l'appli utilise Claude pour écrire et modifier le programme et estimer les repas. Ouverte ailleurs, elle se rabat sur un générateur de programme intégré et sur la base d'aliments intégrée.
 
-## Méthodes intégrées (en plus du suivi classique)
-1. **Empilement d'habitudes** : « Après [habitude existante], je [nouvelle habitude] ».
-2. **Règle des 2 minutes** : bouton `2 MIN` = version mini, compte comme demi-case, la série ne casse pas.
-3. **Ne jamais rater deux fois** : alerte orange si hier a été raté.
-4. **Identité d'abord** : « Je suis quelqu'un qui… ».
-5. **Quand et où** : chaque habitude a un moment de la journée.
-6. **Récompense immédiate** : Pixou, compagnon pixel qui gagne de l'XP et évolue.
-7. **Revue hebdomadaire** dans le Journal.
-8. **Peu à la fois** : avertissement au-delà de 3 habitudes récentes.
-9. **Préparer l'environnement** (conseil).
+## Méthodes intégrées
+Empilement d'habitudes, règle des 2 minutes, ne jamais rater deux fois, suivi automatique, identité d'abord, quand et où, surcharge progressive, récompense immédiate (Pixou), revue hebdomadaire, peu à la fois.
 
-Les données de départ sont des exemples.
+Les données de départ sont des exemples (bouton « Tout effacer » dans Analyses).
