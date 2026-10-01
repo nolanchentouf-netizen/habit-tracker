@@ -79,7 +79,7 @@ button:disabled{cursor:default;opacity:.5}
 
 /* habit card */
 main{flex:1;padding-bottom:20px}
-.view{display:flex;flex-direction:column;gap:14px}
+.view{display:flex;flex-direction:column;gap:12px}
 .card{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .c-head{display:flex;align-items:center;gap:12px}
 .tile{width:56px;height:52px;flex:none;border-radius:10px;border:0;padding:0;background:var(--cl);display:grid;place-items:center}
@@ -495,7 +495,16 @@ const WD=["lun","mar","mer","jeu","ven","sam","dim"];
 const WD_L=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
 const human=k=>{const d=parse(k);return k===TK?"aujourd'hui":`${WD_L[monIdx(d)]} ${d.getDate()} ${MONTHS[d.getMonth()]}`};
 // moins de semaines sur les petits écrans pour garder des cases touchables
-const WEEKS=(window.innerWidth||400)<370?16:(window.innerWidth||400)<420?20:22;
+// taille de l'affichage (réglable) : on « dézoome » toute l'appli
+const SCALES=[[.75,"Petite"],[.85,"Moyenne"],[1,"Grande"]];
+let WEEKS=22;
+function applyScale(){
+  const z=+(S?.settings?.scale)||.85;
+  document.documentElement.style.zoom=z===1?"":z;
+  // largeur réellement disponible une fois dézoomé : moins de semaines sur les petits écrans
+  const w=Math.min(460,(window.innerWidth||400)/z);
+  WEEKS=w<370?16:w<420?20:22;
+}
 
 /* ================= helpers ================= */
 const $=s=>document.querySelector(s);
@@ -1594,6 +1603,9 @@ function renderSettings(){
       <label class="f"><span class="q">Date de naissance</span><input class="in" type="date" data-c="birth" value="${esc(S.settings.birth)}" max="${TK}"></label>
       <label class="f"><span class="q">Espérance de vie (ans)</span><input class="in" type="number" min="30" max="120" data-c="life" value="${S.settings.life}"></label>
     </div><p class="note">Sert au calcul du temps restant.</p></div>
+    <div class="panel"><h2 class="h2 fg">Taille de l'affichage</h2>
+      <div class="seg">${SCALES.map(([z,l])=>`<button data-a="scale" data-v="${z}" aria-pressed="${(+S.settings.scale||.85)===z}">${l}</button>`).join("")}</div>
+      <p class="note">Rend le texte et les boutons plus petits ou plus grands dans toute l'appli.</p></div>
     <div class="panel"><h2 class="h2 fg">Données</h2>
       <p class="note">Tes données restent sur ce téléphone, dans cette version de l'appli. Sauvegarde-les pour les retrouver sur l'appli installée ou un autre téléphone.</p>
       <p class="note ${backupDue()?"bad":"ok"}">Dernière sauvegarde : ${backupText()}. Un rappel s'affiche sur l'écran Habitudes tous les ${BACKUP_EVERY} jours.</p>
@@ -1819,8 +1831,9 @@ const A={
     if(DL){DL.save({filename:name,data}).then(()=>{markBackup();toast("Sauvegarde prête")}).catch(e=>{if(e?.code!=="cancelled")toast("Sauvegarde impossible")});return}
     if(window.top===window.self){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);markBackup();toast("Sauvegarde téléchargée : range-la dans Drive ou envoie-la-toi par mail");return}
     navigator.clipboard?.writeText(data).then(()=>{markBackup();toast("Données copiées dans le presse-papiers")},()=>toast("Sauvegarde impossible ici"))},
+  scale:d=>{S.settings.scale=+d.v;save();applyScale();render()},
   snoozeBackup:()=>{S.settings.backupSnooze=iso(addDays(TODAY,3));save();render()},
-  confirmImport:()=>{S=ui.pendingImport.data;delete S.exported;if(!S.notes)S.notes={};migrate();if(!S.settings)S.settings={birth:iso(new Date(TODAY.getFullYear()-25,0,1)),life:80};
+  confirmImport:()=>{S=ui.pendingImport.data;delete S.exported;if(!S.notes)S.notes={};if(!S.settings)S.settings={birth:iso(new Date(TODAY.getFullYear()-25,0,1)),life:80};migrate();applyScale();
     ui.pendingImport=null;S.settings.lastBackup=TK;save();render();toast("Données restaurées")},
   reset:()=>{if(!ui.confirmReset){ui.confirmReset=true;render();return}
     const fresh=sampleState();S={v:2,habits:[],journal:{},week:{},notes:{},settings:S.settings,food:{...fresh.food,log:{},notes:{},weight:{}},workout:{...fresh.workout,cal:{}},agenda:{events:[],workoutTime:"18:00"},study:{subjects:[],cards:[],plan:[],log:{},planTime:"17:00",pomo:{work:25,brk:5}}};
@@ -1893,7 +1906,7 @@ $("#addBtn").innerHTML=ico("plus");$("#timeBtn").innerHTML=ico("hourglass");
 // liens directs (raccourcis de l'icône de l'appli) : #time, #food, #sport, #journal, #add…
 function openHash(){const h=location.hash.slice(1);if(VIEWS.includes(h)){ui.tab=h;render();window.scrollTo(0,0)}else if(h==="add")A.openAdd()}
 addEventListener("hashchange",openHash);
-save();render();openHash();
+applyScale();save();render();openHash();
 </script>
 
 <script>
