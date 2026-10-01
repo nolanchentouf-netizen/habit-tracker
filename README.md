@@ -8,6 +8,22 @@ Appli perso pour créer des habitudes, style pixel / rétro. Tout est dans `inde
 - Chaque page a un titre, une phrase qui explique quoi faire et des flèches pour changer de jour.
 - **Plus** : Temps restant, Analyses, Méthodes, Aide (à quoi sert chaque bouton), Réglages.
 
+## Installer sur le téléphone
+L'appli installable est dans `app/` (générée par `python3 tools/build.py` à partir de `index.html`) :
+icône sur l'écran d'accueil, plein écran, fonctionne hors ligne, raccourcis par appui long sur l'icône
+(Temps restant, Repas, Sport, Journal).
+
+1. **La mettre en ligne** (une seule fois), au choix :
+   - **GitHub Pages** : le dépôt doit être public (ou compte GitHub Pro). Settings → Pages → Source : « GitHub Actions ».
+     Le workflow `.github/workflows/pages.yml` publie `app/` à chaque push sur `main`.
+   - **Netlify Drop** : sur https://app.netlify.com/drop, glisser le dossier `app/` (compte gratuit pour garder le site).
+2. **L'installer** : ouvrir l'adresse sur le téléphone.
+   - Android (Chrome) : menu ⋮ → « Installer l'application ».
+   - iPhone (Safari) : Partager → « Sur l'écran d'accueil ».
+3. **Récupérer ses données** : Plus → Réglages → « Sauvegarder mes données » dans l'ancienne version, puis « Restaurer une sauvegarde » dans l'appli installée.
+
+Hors de Claude, l'IA n'est pas disponible : le coach et l'estimation des repas utilisent le modèle et la base intégrés.
+
 ## Onglets
 - **Habitudes** : cartes avec grille sur 22 semaines, série 🔥, filtres par catégorie, filtre « Restant » (Matin / Midi / Soir), recherche, tri.
   - Bouton **+** : catalogue de 47 suivis prêts à ajouter (santé, sport, nutrition, esprit, productivité, maison, social, finances) ou suivi personnalisé.
