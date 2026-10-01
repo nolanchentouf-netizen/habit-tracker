@@ -81,11 +81,16 @@ page = head + src + tail
 with open(os.path.join(OUT, "index.html"), "w", encoding="utf-8") as f:
     f.write(page)
 
+# ---------- SDK Anthropic (IA avec la clé de l'utilisateur) ----------
+import shutil
+for name in ("anthropic-sdk.mjs", "LICENSE-anthropic-sdk.txt"):
+    shutil.copy(os.path.join(ROOT, "vendor", name), os.path.join(OUT, name))
+
 # ---------- service worker (hors ligne) ----------
-version = hashlib.sha1(page.encode()).hexdigest()[:10]
+version = hashlib.sha1(page.encode() + open(os.path.join(ROOT, "vendor", "anthropic-sdk.mjs"), "rb").read()).hexdigest()[:10]
 sw = """// Généré par tools/build.py : garde l'appli disponible hors ligne.
 const CACHE="habitpix-%s";
-const SHELL=["./","index.html","manifest.webmanifest","icon-180.png","icon-192.png","icon-512.png"];
+const SHELL=["./","index.html","manifest.webmanifest","icon-180.png","icon-192.png","icon-512.png","anthropic-sdk.mjs"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener("fetch",e=>{
