@@ -47,7 +47,11 @@ Hors de Claude, l'IA n'est pas disponible : le coach et l'estimation des repas u
 - **Méthodes** (ampoule en haut) : les techniques utilisées par l'appli.
 
 ## IA
-Ouverte dans Claude (lien d'artefact), l'appli utilise Claude pour écrire et modifier le programme et estimer les repas. Ouverte ailleurs, elle se rabat sur un générateur de programme intégré et sur la base d'aliments intégrée.
+- **Dans Claude** (lien d'artefact) : l'IA utilise ton compte Claude, rien à régler.
+- **Appli installée** : Plus → Réglages → IA, colle une clé API Claude (console.anthropic.com, payant à l'usage). L'appli appelle l'API avec le SDK officiel (`vendor/anthropic-sdk.mjs`, modèle Claude Opus 5.5). La clé reste sur le téléphone et n'est jamais incluse dans les sauvegardes.
+- **Sans IA** : coach, estimation des repas et fiches utilisent les versions intégrées.
+
+**Coach sport** (onglet Sport) : discussion avec le coach, raccourcis (« 4 séances par semaine », « plus de doigts »…). Chaque proposition affiche le nombre de séances et les jours, avec un bouton **Appliquer ce programme** ; une fois appliqué, un bandeau confirme et les séances sont planifiées sur 4 semaines (bouton Annuler). Le coach intégré comprend le nombre de séances, la durée, l'objectif et le niveau.
 
 ## Méthodes intégrées
 Empilement d'habitudes, règle des 2 minutes, ne jamais rater deux fois, suivi automatique, identité d'abord, quand et où, surcharge progressive, récompense immédiate (Pixou), revue hebdomadaire, peu à la fois.

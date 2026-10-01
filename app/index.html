@@ -340,6 +340,23 @@ textarea.in{height:auto;min-height:84px;padding:8px;resize:vertical}
 .subj-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:2px solid var(--raise)}
 .subj-row:first-child{border-top:0}
 .dot{width:14px;height:14px;flex:none;background:var(--cd);border-radius:3px}
+.chat{display:flex;flex-direction:column;gap:8px}
+.msg{padding:8px 10px;border-radius:12px;font-size:19px;max-width:92%;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--white);color:var(--ink)}
+.msg.bot{align-self:flex-start;background:var(--raise)}
+.msg.wait{color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.msg.wait{animation:blink 1s steps(2) infinite}}
+@keyframes blink{50%{opacity:.4}}
+.prop{border:2px solid #e2ad12;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.prop.applied{border-color:var(--good)}
+.prop .pd{border-top:2px solid var(--raise);padding-top:6px}
+.prop .pd summary{cursor:pointer;list-style:none;font-family:var(--font-pixel);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.prop .pd summary::-webkit-details-marker{display:none}
+.quick{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.quick::-webkit-scrollbar{display:none}
+.quick button{flex:none;height:34px;border-radius:17px;border:2px solid var(--line);background:var(--raise);font-size:17px;padding:0 12px}
+.ok-banner{border:2px solid var(--good);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.ok-banner b{font-family:var(--font-pixel);font-size:12px;letter-spacing:.06em;color:var(--good)}
 @media (max-width:345px){.brand .hb{display:none}.menu-grid{grid-template-columns:1fr}}
 </style>
 
@@ -664,7 +681,8 @@ function cleanProgram(o,fallback){
     ex:(Array.isArray(d.ex)?d.ex:[]).slice(0,12).map(e=>({n:String(e.n||e.name||"Exercice").slice(0,60),sets:Math.max(1,Math.min(10,r0(e.sets)||3)),
       reps:String(e.reps??"10").slice(0,12),kg:+e.kg||0,rest:String(e.rest||"").slice(0,12),note:String(e.note||"").slice(0,120)}))}));
   let sched=(Array.isArray(o.schedule)?o.schedule:[]).map(Number).filter(n=>n>=0&&n<=6);
-  if(!sched.length) sched=SCHED[Math.min(6,Math.max(2,days.length))]||fallback;
+  // chaque séance doit avoir son jour : si l'IA a donné moins de jours que de séances, on prend le planning standard
+  if(!sched.length||(sched.length<days.length&&days.length<=6)) sched=SCHED[Math.min(6,Math.max(2,days.length))]||fallback;
   return {name:String(o.name||"Mon programme").slice(0,60),schedule:[...new Set(sched)].sort(),days,tips:(Array.isArray(o.tips)?o.tips:[]).slice(0,5).map(String),source:"ia"};
 }
 
@@ -681,10 +699,11 @@ function migrate(){
     const ks=[...Object.keys(S.food?.log||{}),...S.habits.flatMap(h=>Object.keys(h.log||{})),TK].sort();S.settings.firstUse=ks[0]}
   if(!S.workout.profile.gear){S.workout.profile.gear=[...MY_GEAR];S.workout.gearNotice=true}
   if(!S.agenda)S.agenda={events:[],workoutTime:"18:00"};
+  if(!S.workout.chat)S.workout.chat=[];
   if(!S.study)S.study={subjects:[],cards:[],plan:[],log:{},planTime:"17:00",pomo:{work:25,brk:5}};
 }
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
-let ui={agSel:TK,agMode:"day",sheetMode:null,ev:null,review:null,aiCards:[],studyStatus:{msg:"",cls:""},feyn:"",openDay:0,qShift:0,noteFor:null,noteRate:0,jOpen:{},hist:"",tab:"habits",cat:"Tout",sel:TK,q:"",sort:false,searchOpen:false,calM:new Date(TODAY.getFullYear(),TODAY.getMonth(),1),calPick:null,meal:null,aiFood:[],foodQ:"",showGoals:false,addTab:"cat",catQ:"",edit:null,pick:{color:"leaf",icon:"run"},confirmDel:false,confirmReset:false};
+let ui={applied:null,keyStatus:null,agSel:TK,agMode:"day",sheetMode:null,ev:null,review:null,aiCards:[],studyStatus:{msg:"",cls:""},feyn:"",openDay:0,qShift:0,noteFor:null,noteRate:0,jOpen:{},hist:"",tab:"habits",cat:"Tout",sel:TK,q:"",sort:false,searchOpen:false,calM:new Date(TODAY.getFullYear(),TODAY.getMonth(),1),calPick:null,meal:null,aiFood:[],foodQ:"",showGoals:false,addTab:"cat",catQ:"",edit:null,pick:{color:"leaf",icon:"run"},confirmDel:false,confirmReset:false};
 
 function sampleState(){
   const habit=(name,extra)=>{const c=CATALOG.find(t=>t.name===name);return {...c,id:uid(),log:{},...extra}};
@@ -926,13 +945,68 @@ function renderPet(){
   $("#petMsg").textContent=tot&&done===tot?"Tout est fait aujourd'hui. Pixou est rassasié !":`${done}/${tot} aujourd'hui · encore ${per-cur} XP pour le niveau ${lvl+1}`;
 }
 
-/* ================= AI (capacité « sample » de Claude) ================= */
+/* ================= IA =================
+   1) Ouverte dans Claude : capacité « sample » (le compte Claude de l'utilisateur).
+   2) Appli installée : API Claude avec la clé de l'utilisateur (SDK officiel, fichier anthropic-sdk.mjs).
+   3) Sinon : coach / estimations intégrés. */
 let AI=null;
-if(window.claude?.use) window.claude.use("sample").then(s=>{AI=s;if(ui.tab==="sport"||ui.tab==="food")render()}).catch(()=>{});
+const IN_CLAUDE=!!window.claude?.use;
+if(IN_CLAUDE) window.claude.use("sample").then(s=>{AI=s;if(["sport","food","study"].includes(ui.tab))render()}).catch(()=>{});
 let DL=null;
-if(window.claude?.use) window.claude.use("downloads").then(d=>{DL=d;if(ui.tab==="sport")render()}).catch(()=>{});
-const aiBadge=()=>`<span class="ai-badge ${AI?"on":""}">${AI?"IA Claude":"Modèle intégré"}</span>`;
-const aiErr=e=>({not_granted:"Accès à l'IA refusé.",rate_limited:"Trop de demandes, réessaie dans une minute.",cancelled:"Annulé."}[e?.code]||"L'IA n'a pas pu répondre.");
+if(IN_CLAUDE) window.claude.use("downloads").then(d=>{DL=d;if(ui.tab==="sport")render()}).catch(()=>{});
+const IA_MODEL="claude-opus-5-5";
+const aiOn=()=>!!AI||!!S.settings.apiKey;
+const aiBadge=()=>`<span class="ai-badge ${aiOn()?"on":""}">${AI?"IA Claude":S.settings.apiKey?"IA (ta clé)":"Intégré"}</span>`;
+const aiErr=e=>({not_granted:"Accès à l'IA refusé.",rate_limited:"Trop de demandes, réessaie dans une minute.",cancelled:"Annulé.",
+  bad_key:"Clé API refusée : vérifie-la dans Plus → Réglages.",no_credit:"Ton compte API n'a plus de crédit ou d'accès à ce modèle.",
+  offline:"Pas de connexion internet.",refused:"L'IA a refusé de répondre à cette demande.",invalid_json:"Réponse de l'IA illisible, réessaie."}[e?.code]||"L'IA n'a pas pu répondre.");
+let SDK=null,sdkClient=null,sdkKey="";
+async function apiClient(){
+  const key=S.settings.apiKey;if(!key)return null;
+  if(!SDK)SDK=(await import("./anthropic-sdk.mjs")).default;
+  if(!sdkClient||sdkKey!==key){sdkClient=new SDK({apiKey:key,dangerouslyAllowBrowser:true});sdkKey=key}
+  return sdkClient;
+}
+function parseJSON(t){
+  t=String(t||"").replace(/```(?:json)?/g,"").trim();
+  try{return JSON.parse(t)}catch(_){}
+  const a=Math.min(...["{","["].map(c=>t.indexOf(c)).filter(x=>x>=0)),b=Math.max(t.lastIndexOf("}"),t.lastIndexOf("]"));
+  if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1))}catch(_){}}
+  throw{code:"invalid_json"};
+}
+async function apiCall(input,{system,schema,tier}={}){
+  const client=await apiClient();if(!client)throw{code:"none"};
+  const messages=typeof input==="string"?[{role:"user",content:input}]:input;
+  try{
+    const res=await client.beta.messages.create({
+      model:IA_MODEL,max_tokens:16000,
+      betas:["server-side-fallback-2026-07-01"],fallbacks:"default",
+      output_config:{effort:tier==="quick"?"low":"medium",...(schema?{format:{type:"json_schema",schema}}:{})},
+      ...(system?{system}:{}),messages});
+    if(res.stop_reason==="refusal")throw{code:"refused"};
+    return res.content.filter(b=>b.type==="text").map(b=>b.text).join("");
+  }catch(e){
+    if(e?.code)throw e;
+    if(e instanceof SDK.AuthenticationError)throw{code:"bad_key"};
+    if(e instanceof SDK.PermissionDeniedError||e instanceof SDK.NotFoundError)throw{code:"no_credit"};
+    if(e instanceof SDK.RateLimitError)throw{code:"rate_limited"};
+    if(e instanceof SDK.BadRequestError&&/credit|billing/i.test(e.message))throw{code:"no_credit"};
+    if(e instanceof SDK.APIConnectionError)throw{code:"offline"};
+    throw{code:"upstream"};
+  }
+}
+// interface commune : IA.json(…) renvoie des données, IA.text(…) du texte
+const IA={
+  async json(input,o={}){
+    if(AI){const turns=typeof input==="string"||!o.system?input:input.map((m,i)=>i===0?{...m,content:o.system+"\n\n"+m.content}:m);
+      return AI.json(typeof turns==="string"&&o.system?o.system+"\n\n"+turns:turns,{modelTier:o.tier||"default"})}
+    return parseJSON(await apiCall(input,o));
+  },
+  async text(input,o={}){
+    if(AI)return(await AI(input,{modelTier:o.tier||"default",onText:o.onText})).text;
+    const t=await apiCall(input,o);o.onText?.({text:t});return t;
+  }
+};
 
 /* ================= sport view ================= */
 let sportStatus={msg:"",cls:""},busy=false;
@@ -1007,52 +1081,120 @@ function programEditor(){
     ${P.tips?.length?`<ul class="tips">${P.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
   </div>`;
 }
-function coach(){
-  const p=S.workout.profile,opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${k===v?"selected":""}>${l}</option>`).join("");
-  return `<div class="panel">
-    <div class="panel-head"><h2 class="h2 fg">${ico("spark").replace("<svg",'<svg style="width:14px;height:14px;margin-right:6px"')}Coach IA</h2>${aiBadge()}</div>
-    <div class="grid2">
-      <div class="f"><label class="q" for="cGoal">Objectif</label><select class="in" id="cGoal" data-c="prof" data-f="goal">${opt(GOALS,p.goal)}</select></div>
-      <div class="f"><label class="q" for="cLvl">Niveau</label><select class="in" id="cLvl" data-c="prof" data-f="level">${opt(LEVELS,p.level)}</select></div>
-      <div class="f"><label class="q" for="cDays">Jours / semaine</label><select class="in" id="cDays" data-c="prof" data-f="days">${opt({2:"2",3:"3",4:"4",5:"5",6:"6"},p.days)}</select></div>
-      <div class="f"><label class="q" for="cMin">Durée</label><select class="in" id="cMin" data-c="prof" data-f="minutes">${opt({30:"30 min",45:"45 min",60:"1 h",75:"1 h 15",90:"1 h 30"},p.minutes)}</select></div>
-    </div>
-    <div class="f"><span class="q">Mon matériel (toujours pris en compte)</span>
-      <div class="gear">${Object.entries(GEAR).map(([k,l])=>`<button data-a="gear" data-g="${k}" aria-pressed="${(p.gear||[]).includes(k)}">${l}</button>`).join("")}</div></div>
-    ${S.workout.gearNotice?`<p class="note ok">Ton matériel est enregistré. Touche « Générer mon programme » pour l'utiliser.</p>`:""}
-    <div class="f"><label class="q" for="cNotes">Infos pour le coach</label><textarea class="in" id="cNotes" data-c="prof" data-f="notes" placeholder="Blessures, exercices préférés, muscles à prioriser…">${esc(p.notes)}</textarea></div>
-    <button class="btn primary" data-a="aiGen" ${busy?"disabled":""}>${ico("spark")}Générer mon programme</button>
-    <div class="f"><label class="q" for="cMod">Modifier le programme actuel</label>
-      <input class="in" id="cMod" placeholder="Ex. : remplace le squat, j'ai mal au genou"></div>
-    <div class="btns"><button class="btn" data-a="aiMod" ${busy||!AI?"disabled":""}>${ico("spark")}Modifier avec l'IA</button>
-      ${S.workout.prev?`<button class="btn" data-a="undoProg">${ico("undo")}Annuler</button>`:""}</div>
-    ${!AI?`<p class="note">Ouvre l'appli dans Claude pour que l'IA écrive et modifie ton programme. Ici, le modèle intégré crée un programme à partir de tes réponses.</p>`:""}
-    ${sportStatus.msg?`<p class="note ${sportStatus.cls}">${esc(sportStatus.msg)}</p>`:""}
+const PROG_SCHEMA={type:"object",additionalProperties:false,required:["name","schedule","days","tips"],properties:{
+  name:{type:"string"},schedule:{type:"array",items:{type:"integer"}},tips:{type:"array",items:{type:"string"}},
+  days:{type:"array",items:{type:"object",additionalProperties:false,required:["name","ex"],properties:{name:{type:"string"},
+    ex:{type:"array",items:{type:"object",additionalProperties:false,required:["n","sets","reps","kg","rest","note"],properties:{
+      n:{type:"string"},sets:{type:"integer"},reps:{type:"string"},kg:{type:"number"},rest:{type:"string"},note:{type:"string"}}}}}}}}};
+const COACH_SCHEMA={type:"object",additionalProperties:false,required:["reply","propose","program"],properties:{
+  reply:{type:"string"},propose:{type:"boolean"},program:PROG_SCHEMA}};
+const schedTxt=sc=>[...sc].sort().map(i=>WD[i]).join(", ");
+const progSummary=P=>`${P.days.length} séance${P.days.length>1?"s":""} différente${P.days.length>1?"s":""} · ${P.schedule.length} jour${P.schedule.length>1?"s":""} par semaine (${schedTxt(P.schedule)})`;
+function coachRules(){
+  const W=S.workout,p=W.profile;
+  return `Tu es le coach sportif de l'application Habit Pix. Tu discutes en français, de façon courte et concrète (120 mots maximum, sans markdown).
+Profil : objectif ${GOALS[p.goal]}, niveau ${LEVELS[p.level]}, séances de ${p.minutes} min, ${p.days} jours par semaine par défaut.
+Matériel disponible à la maison (n'utilise QUE ce matériel, et intègre le travail des doigts / avant-bras s'il est présent) : ${gearText(p.gear)}.
+Infos de l'utilisateur : ${p.notes||"aucune"}.
+Aujourd'hui : ${WD_L[monIdx(TODAY)]} ${TK}.
+Programme actuel (JSON) : ${JSON.stringify({name:W.program.name,schedule:W.program.schedule,days:W.program.days.map(d=>({name:d.name,ex:d.ex.map(e=>({n:e.n,sets:e.sets,reps:e.reps,kg:e.kg}))}))})}
+
+Règles :
+- Si l'utilisateur demande un programme ou une modification, mets propose=true et renvoie le programme COMPLET dans "program" (y compris les parties inchangées et les charges kg déjà notées).
+- schedule = jours d'entraînement de la semaine (0 = lundi … 6 = dimanche). S'il demande N jours, schedule contient EXACTEMENT N jours et days contient N séances.
+- kg = charge de départ conseillée (0 si poids du corps ou inconnue). reps est un texte (ex. "8-10", "6 × (7 s / 3 s)").
+- Dans "reply", résume ce que tu proposes (nombre de séances, jours, idée générale) et dis de toucher « Appliquer ».
+- Si c'est juste une question ou une discussion, propose=false et program = {"name":"","schedule":[],"days":[],"tips":[]}.
+Réponds uniquement avec un objet JSON {"reply":"…","propose":true|false,"program":{…}}.`;
+}
+function localCoach(text){
+  const t=text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""),p={...S.workout.profile};let hit=false;
+  const d=t.match(/([2-6])\s*(?:jours?|j\b|seances?|fois|x\b|entrainements?)/);if(d){p.days=d[1];hit=true}
+  const m=t.match(/(\d{2,3})\s*min/),h=t.match(/(\d)\s*h(?:eures?)?\s*(\d{2})?/);
+  if(m){p.minutes=String([30,45,60,75,90].reduce((a,b)=>Math.abs(b-m[1])<Math.abs(a-m[1])?b:a));hit=true}else if(h){const mm=h[1]*60+(+h[2]||0);p.minutes=String([30,45,60,75,90].reduce((a,b)=>Math.abs(b-mm)<Math.abs(a-mm)?b:a));hit=true}
+  [[/muscl|masse|prise|hypertroph/,"muscle"],[/force|puissan/,"force"],[/perte|perdre|seche|maigr|gras/,"perte"],[/endurance|cardio/,"endurance"],[/remise|reprise|en forme/,"forme"]]
+    .forEach(([r,g])=>{if(r.test(t)){p.goal=g;hit=true}});
+  [[/debutant/,"debut"],[/intermediaire/,"inter"],[/avance|confirme/,"avance"]].forEach(([r,l])=>{if(r.test(t)){p.level=l;hit=true}});
+  if(!hit&&!/programme|plan|seance|entrainement|routine|propose/.test(t))
+    return {text:`Je suis le coach intégré : je crée un programme si tu me donnes le nombre de séances par semaine, la durée, ton objectif ou ton niveau. Exemple : « 4 séances de 45 min pour prendre du muscle ».\n\nPour discuter librement (douleurs, exercices à remplacer…), active l'IA : Plus → Réglages → IA.`};
+  const prog=localProgram(p);
+  return {text:`Voici un programme « ${prog.name} » : ${progSummary(prog)}, séances de ${p.minutes} min, objectif ${GOALS[p.goal].toLowerCase()}, avec ton matériel. Touche « Appliquer » pour le mettre dans ton calendrier.${aiOn()?"":"\n\n(Coach intégré : pour une vraie discussion, active l'IA dans Plus → Réglages.)"}`,
+    prop:prog,profile:p};
+}
+async function coachSend(text){
+  text=String(text||"").trim();if(!text||busy)return;
+  const W=S.workout;W.chat=W.chat||[];W.chat.push({role:"user",text});
+  busy=true;renderSport();scrollChat();
+  let msg;
+  if(aiOn()){
+    try{
+      const hist=W.chat.slice(-12).map(m=>({role:m.role,content:m.role==="assistant"&&m.prop?`${m.text}\n[Programme proposé : ${JSON.stringify({name:m.prop.name,schedule:m.prop.schedule,days:m.prop.days.map(d=>({name:d.name,ex:d.ex.map(e=>e.n)}))})}]`:m.text}));
+      while(hist.length&&hist[0].role!=="user")hist.shift();
+      const r=await IA.json(hist,{system:coachRules(),schema:COACH_SCHEMA});
+      msg={role:"assistant",text:String(r?.reply||"").slice(0,2000)||"Voici ma proposition."};
+      if(r?.propose&&r.program?.days?.length)msg.prop=cleanProgram(r.program,SCHED[W.profile.days]);
+    }catch(e){
+      const l=localCoach(text);msg={role:"assistant",text:`${aiErr(e)} Réponse du coach intégré :\n\n${l.text}`,prop:l.prop,profile:l.profile,err:true};
+    }
+  } else {const l=localCoach(text);msg={role:"assistant",text:l.text,prop:l.prop,profile:l.profile}}
+  W.chat.push(msg);W.chat=W.chat.slice(-30);busy=false;save();renderSport();scrollChat();
+}
+function scrollChat(){const el=document.getElementById("chatEnd");el?.scrollIntoView({block:"end",behavior:"smooth"})}
+function propCard(m,i){
+  const P=m.prop;
+  return `<div class="prop ${m.applied?"applied":""}">
+    <div class="row-t">${esc(P.name)}</div>
+    <div class="row-s">${progSummary(P)}</div>
+    ${P.days.map(d=>`<details class="pd"><summary>${esc(d.name)} · ${d.ex.length} exos</summary><div class="row-s">${d.ex.map(e=>`${esc(e.n)} — ${e.sets} × ${esc(e.reps)}${e.kg?` @ ${e.kg} kg`:""}`).join("<br>")}</div></details>`).join("")}
+    ${m.applied?`<p class="note ok">✓ Appliqué : il est dans « Mon programme » et planifié sur 4 semaines.</p>`
+      :`<button class="btn primary" data-a="applyProp" data-i="${i}">${ico("check")}Appliquer ce programme</button>`}
   </div>`;
 }
-function renderSport(){
-  $("#v-sport").innerHTML=pageHead("Sport","Ta séance du jour, ton calendrier et ton programme, créé avec le coach IA.")+dateBar()+sessionCard()+calendar()+coach()+programEditor();
+function coach(){
+  const W=S.workout,p=W.profile,chat=W.chat||[],opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${k===v?"selected":""}>${l}</option>`).join("");
+  const QUICK=["Programme de 4 séances par semaine","Plus de travail des doigts pour l'escalade","Séances plus courtes, 45 min","J'ai mal au genou, adapte le programme","Explique-moi la surcharge progressive"];
+  return `<div class="panel" id="coach">
+    <div class="panel-head"><h2 class="h2 fg">${ico("spark").replace("<svg",'<svg style="width:14px;height:14px;margin-right:6px"')}Coach</h2>${aiBadge()}</div>
+    <div class="chat">
+      ${chat.length?"":`<div class="msg bot">Salut ! Dis-moi ce que tu veux : un nouveau programme, un changement, une question… Je te proposerai un programme avec un bouton « Appliquer ».</div>`}
+      ${chat.map((m,i)=>m.role==="user"?`<div class="msg user">${esc(m.text)}</div>`:`<div class="msg bot">${esc(m.text)}</div>${m.prop?propCard(m,i):""}`).join("")}
+      ${busy?`<div class="msg bot wait">${aiOn()?"Le coach réfléchit… (jusqu'à une minute)":"…"}</div>`:""}
+      <span id="chatEnd"></span>
+    </div>
+    <div class="quick">${QUICK.map(q=>`<button data-a="coachQuick" data-q="${esc(q)}" ${busy?"disabled":""}>${esc(q)}</button>`).join("")}</div>
+    <textarea class="in" id="coachIn" placeholder="Écris au coach…" style="min-height:64px"></textarea>
+    <div class="btns"><button class="btn primary" data-a="coachSend" ${busy?"disabled":""}>Envoyer</button>
+      ${chat.length?`<button class="btn small" data-a="coachClear" ${busy?"disabled":""}>Effacer la discussion</button>`:""}</div>
+    ${aiOn()?"":`<p class="note">Coach intégré : il comprend le nombre de séances, la durée, l'objectif et le niveau. Pour une vraie discussion avec l'IA, <button class="btn small" data-a="tab" data-tab="settings">active l'IA</button></p>`}
+    <details class="jact"><summary><span class="row-t">Mes infos pour le coach</span></summary><div class="jact-body" style="padding-top:8px">
+      <div class="grid2">
+        <div class="f"><label class="q" for="cGoal">Objectif</label><select class="in" id="cGoal" data-c="prof" data-f="goal">${opt(GOALS,p.goal)}</select></div>
+        <div class="f"><label class="q" for="cLvl">Niveau</label><select class="in" id="cLvl" data-c="prof" data-f="level">${opt(LEVELS,p.level)}</select></div>
+        <div class="f"><label class="q" for="cDays">Jours / semaine</label><select class="in" id="cDays" data-c="prof" data-f="days">${opt({2:"2",3:"3",4:"4",5:"5",6:"6"},p.days)}</select></div>
+        <div class="f"><label class="q" for="cMin">Durée</label><select class="in" id="cMin" data-c="prof" data-f="minutes">${opt({30:"30 min",45:"45 min",60:"1 h",75:"1 h 15",90:"1 h 30"},p.minutes)}</select></div>
+      </div>
+      <div class="f"><span class="q">Mon matériel (toujours pris en compte)</span>
+        <div class="gear">${Object.entries(GEAR).map(([k,l])=>`<button data-a="gear" data-g="${k}" aria-pressed="${(p.gear||[]).includes(k)}">${l}</button>`).join("")}</div></div>
+      <div class="f"><label class="q" for="cNotes">Blessures, préférences…</label><textarea class="in" id="cNotes" data-c="prof" data-f="notes" placeholder="Ex. : genou fragile, j'aime les tractions">${esc(p.notes)}</textarea></div>
+      <button class="btn" data-a="coachForm" ${busy?"disabled":""}>${ico("spark")}Proposer un programme avec ces infos</button>
+    </div></details>
+  </div>`;
 }
-async function aiGenerate(modify){
-  const W=S.workout,p=W.profile;
-  const fmt=`Réponds UNIQUEMENT avec un objet JSON de cette forme :
-{"name":"…","schedule":[0,2,4],"days":[{"name":"Jour A · Full body","ex":[{"n":"Squat","sets":4,"reps":"6-8","kg":0,"rest":"2 min","note":""}]}],"tips":["…"]}
-schedule = jours d'entraînement (0 = lundi … 6 = dimanche), autant que de séances par semaine. kg = charge de départ conseillée (0 si inconnue ou poids du corps). Tout en français.`;
-  const prompt=modify
-    ?`Tu es coach de musculation. Voici le programme actuel de l'utilisateur en JSON :\n${JSON.stringify({name:W.program.name,schedule:W.program.schedule,days:W.program.days,tips:W.program.tips})}\n\nDemande de modification : "${modify}"\nGarde tout le reste identique (y compris les charges kg déjà notées). ${fmt}`
-    :`Tu es coach de musculation. Crée un programme d'entraînement hebdomadaire sûr et efficace.\nObjectif : ${GOALS[p.goal]}. Niveau : ${LEVELS[p.level]}. ${p.days} séances par semaine de ${p.minutes} minutes. Matériel disponible à la maison (utilise UNIQUEMENT ce matériel, intègre-le intelligemment, y compris le travail des doigts et des avant-bras si présent) : ${gearText(p.gear)}.\nInfos de l'utilisateur : ${p.notes||"aucune"}.\n${fmt}`;
-  busy=true;sportStatus={msg:"L'IA prépare ton programme… (jusqu'à une minute)",cls:""};renderSport();
-  let prog=null;
-  try{
-    if(!AI) throw {code:"none"};
-    prog=cleanProgram(await AI.json(prompt,{modelTier:"default"}),SCHED[p.days]);
-    sportStatus={msg:modify?"Programme modifié par l'IA.":"Programme créé par l'IA et planifié sur 4 semaines.",cls:"ok"};
-  }catch(e){
-    if(modify){busy=false;sportStatus={msg:aiErr(e)+" Le programme n'a pas changé.",cls:"bad"};renderSport();return}
-    prog=localProgram(p);
-    sportStatus=e?.code==="none"?{msg:"Programme créé avec le modèle intégré et planifié sur 4 semaines.",cls:"ok"}:{msg:aiErr(e)+" Programme créé avec le modèle intégré.",cls:"bad"};
-  }
-  W.prev=W.program;W.program=prog;W.gearNotice=false;planWeeks(W,4,TODAY);busy=false;save();render();
+function appliedBanner(){
+  const a=ui.applied;if(!a)return"";
+  return `<div class="ok-banner"><b>✓ PROGRAMME APPLIQUÉ</b><span>« ${esc(a.name)} » : ${esc(a.sum)}. Les séances sont planifiées sur 4 semaines dans le calendrier et l'Agenda.</span>
+    <div class="btns"><button class="btn small" data-a="seeProg">Voir le programme</button>${S.workout.prev?`<button class="btn small" data-a="undoProg">${ico("undo")}Annuler</button>`:""}<button class="btn small" data-a="hideApplied">OK</button></div></div>`;
+}
+function renderSport(){
+  const typed=$("#coachIn")?.value||"";
+  $("#v-sport").innerHTML=pageHead("Sport","Ta séance du jour, ton coach, ton calendrier et ton programme.")+appliedBanner()+dateBar()+sessionCard()+coach()+calendar()+`<div id="prog"></div>`+programEditor();
+  if(typed&&$("#coachIn"))$("#coachIn").value=typed;
+}
+function applyProgram(prog,profile){
+  const W=S.workout;W.prev=W.program;W.program=JSON.parse(JSON.stringify(prog));W.gearNotice=false;
+  if(profile)Object.assign(W.profile,{goal:profile.goal,level:profile.level,minutes:profile.minutes});
+  W.profile.days=String(W.program.schedule.length||W.profile.days);
+  planWeeks(W,4,TODAY);ui.applied={name:W.program.name,sum:progSummary(W.program)};
 }
 function icsExport(){
   const W=S.workout,pad=n=>String(n).padStart(2,"0");
@@ -1170,13 +1312,13 @@ function localEstimate(txt){
 }
 async function aiFood(){
   const txt=$("#aiFoodTxt").value.trim();ui.foodQ=txt;if(!txt)return;
-  busy=true;foodStatus={msg:AI?"Estimation en cours…":"",cls:""};renderFood();
+  busy=true;foodStatus={msg:aiOn()?"Estimation en cours…":"",cls:""};renderFood();
   try{
-    if(!AI) throw {code:"none"};
-    const res=await AI.json(`Estime les valeurs nutritionnelles de ce repas : "${txt}".
+    if(!aiOn()) throw {code:"none"};
+    const res=await IA.json(`Estime les valeurs nutritionnelles de ce repas : "${txt}".
 Si une quantité n'est pas donnée, prends une portion normale. Réponds UNIQUEMENT avec un tableau JSON, un objet par aliment :
 [{"name":"Blanc de poulet 200 g","kcal":330,"p":62,"c":0,"f":7}]
-kcal en kcal, p = protéines g, c = glucides g, f = lipides g. Noms en français avec la quantité.`,{modelTier:"quick"});
+kcal en kcal, p = protéines g, c = glucides g, f = lipides g. Noms en français avec la quantité.`,{tier:"quick"});
     if(!Array.isArray(res)||!res.length) throw {code:"empty"};
     ui.aiFood=res.slice(0,20).map(e=>({id:uid(),meal:ui.meal,name:String(e.name||"Aliment").slice(0,60),kcal:r0(e.kcal),p:+(+e.p||0).toFixed(1),c:+(+e.c||0).toFixed(1),f:+(+e.f||0).toFixed(1),note:"estimé par l'IA"}));
     foodStatus={msg:"Vérifie les valeurs, puis ajoute.",cls:"ok"};
@@ -1461,7 +1603,7 @@ function renderStudy(){
     <input class="in" id="cardA" placeholder="Réponse (verso)" maxlength="300">
     <button class="btn" data-a="addCard">${ico("plus")}Ajouter la fiche</button>
     <span class="q" style="padding-top:6px">Créer des fiches depuis ton cours ${aiBadge()}</span>
-    <textarea class="in" id="cardNotes" placeholder="${AI?"Colle ici un passage de ton cours : l'IA en fait des questions/réponses.":"Une fiche par ligne :  question : réponse   (ou  question ? réponse)"}"></textarea>
+    <textarea class="in" id="cardNotes" placeholder="${aiOn()?"Colle ici un passage de ton cours : l'IA en fait des questions/réponses.":"Une fiche par ligne :  question : réponse   (ou  question ? réponse)"}"></textarea>
     <button class="btn" data-a="aiCards" ${busy?"disabled":""}>${ico("spark")}Créer les fiches</button>
     ${ui.studyStatus.msg?`<p class="note ${ui.studyStatus.cls}">${esc(ui.studyStatus.msg)}</p>`:""}
     ${ui.aiCards.length?`<div>${ui.aiCards.map((c,i)=>`<div class="food"><div class="food-main"><div class="food-n">${esc(c.q)}</div><div class="food-d">${esc(c.a)}</div></div><button class="icon-btn" data-a="aiCardDrop" data-i="${i}" aria-label="Retirer">${ico("close")}</button></div>`).join("")}</div>
@@ -1482,7 +1624,7 @@ function renderStudy(){
     <p class="note">Technique de Feynman : écris la notion comme si tu l'expliquais à un enfant de 12 ans.</p>
     <input class="in" id="feynTopic" placeholder="Notion (ex. la dérivée)">
     <textarea class="in" id="feynTxt" placeholder="Ton explication avec tes mots…"></textarea>
-    ${AI?`<button class="btn" data-a="feynman" ${busy?"disabled":""}>${ico("spark")}Vérifier mon explication</button>`:`<p class="note">Relis-toi : as-tu utilisé des mots simples ? donné un exemple ? Là où tu as hésité, retourne dans ton cours.</p>`}
+    ${aiOn()?`<button class="btn" data-a="feynman" ${busy?"disabled":""}>${ico("spark")}Vérifier mon explication</button>`:`<p class="note">Relis-toi : as-tu utilisé des mots simples ? donné un exemple ? Là où tu as hésité, retourne dans ton cours.</p>`}
     ${ui.feyn?`<div class="hist"><div>${esc(ui.feyn).replace(/\n/g,"<br>")}</div></div>`:""}
   </div>
   <div class="panel">
@@ -1514,14 +1656,14 @@ function reviewSheet(){
 }
 async function aiCardsGen(){
   const txt=$("#cardNotes").value.trim();if(!txt){toast("Colle d'abord ton cours");return}
-  ui.cardSub=$("#cardSub").value;busy=true;ui.studyStatus={msg:AI?"L'IA prépare tes fiches…":"",cls:""};renderStudy();
+  ui.cardSub=$("#cardSub").value;busy=true;ui.studyStatus={msg:aiOn()?"L'IA prépare tes fiches…":"",cls:""};renderStudy();
   try{
-    if(!AI)throw{code:"none"};
-    const r=await AI.json(`Tu aides un élève à réviser par rappel actif. À partir de ce cours, crée entre 5 et 15 fiches question/réponse courtes, précises, une notion par fiche, en français.
+    if(!aiOn())throw{code:"none"};
+    const r=await IA.json(`Tu aides un élève à réviser par rappel actif. À partir de ce cours, crée entre 5 et 15 fiches question/réponse courtes, précises, une notion par fiche, en français.
 Réponds UNIQUEMENT avec un tableau JSON : [{"q":"…","a":"…"}]
 
 Cours :
-${txt.slice(0,12000)}`,{modelTier:"default"});
+${txt.slice(0,12000)}`);
     if(!Array.isArray(r)||!r.length)throw{code:"empty"};
     ui.aiCards=r.slice(0,30).map(x=>({q:String(x.q||"").slice(0,200),a:String(x.a||"").slice(0,300)})).filter(x=>x.q&&x.a);
     ui.studyStatus={msg:"Vérifie les fiches, retire celles qui ne te plaisent pas, puis ajoute.",cls:"ok"};
@@ -1538,14 +1680,14 @@ async function makePlan(){
   if(!ch.length){toast("Écris au moins un chapitre");return}
   busy=true;ui.studyStatus={msg:"",cls:""};renderStudy();
   let plan=null;
-  if(AI){
+  if(aiOn()){
     try{
       const busyDays=[...Array(40)].map((_,i)=>iso(addDays(TODAY,i))).map(k=>`${k}: ${itemsFor(k).map(x=>`${x.t||"journée"} ${x.title}`).join(" | ")||"libre"}`).join("\n");
-      const r=await AI.json(`Tu es un coach de révision. Crée un planning de révision pour la matière "${sb.name}".
+      const r=await IA.json(`Tu es un coach de révision. Crée un planning de révision pour la matière "${sb.name}".
 Aujourd'hui : ${TK}. Examen : ${sb.exam||"pas de date, étale sur 3 semaines"}. Séances de ${min} minutes. Chapitres : ${ch.join(" ; ")}.
 Applique la répétition espacée (apprendre puis revoir à J+1, J+3, J+7), mélange les chapitres, garde la veille de l'examen pour un test blanc, maximum 2 séances par jour.
 Emploi du temps existant à éviter :\n${busyDays}
-Réponds UNIQUEMENT avec un tableau JSON : [{"date":"AAAA-MM-JJ","start":"HH:MM","title":"Apprendre · …","min":${min}}]`,{modelTier:"default"});
+Réponds UNIQUEMENT avec un tableau JSON : [{"date":"AAAA-MM-JJ","start":"HH:MM","title":"Apprendre · …","min":${min}}]`);
       plan=(Array.isArray(r)?r:[]).filter(x=>/^\d{4}-\d\d-\d\d$/.test(x.date)&&x.date>=TK&&(!sb.exam||x.date<=sb.exam))
         .slice(0,80).map(x=>({id:uid(),sub,date:x.date,start:/^\d\d:\d\d$/.test(x.start)?x.start:S.study.planTime,title:String(x.title||"Révision").slice(0,60),min:r0(x.min)||min,done:false}));
       if(!plan.length)throw{code:"empty"};
@@ -1560,9 +1702,9 @@ async function feynman(){
   const topic=$("#feynTopic").value.trim(),txt=$("#feynTxt").value.trim();if(!txt){toast("Écris d'abord ton explication");return}
   busy=true;ui.feyn="Lecture de ton explication…";renderStudy();$("#feynTopic").value=topic;$("#feynTxt").value=txt;
   try{
-    await AI(`Un élève applique la technique de Feynman sur la notion "${topic||"(non précisée)"}". Voici son explication :\n"""${txt.slice(0,6000)}"""\n
+    await IA.text(`Un élève applique la technique de Feynman sur la notion "${topic||"(non précisée)"}". Voici son explication :\n"""${txt.slice(0,6000)}"""\n
 Réponds en français, court et bienveillant, sans markdown : 1) ce qui est juste, 2) les erreurs ou trous précis, 3) une question pour vérifier qu'il a compris. Maximum 120 mots.`,
-      {modelTier:"default",onText:({text})=>{ui.feyn=text;const el=document.querySelector("#v-study .hist div");if(el)el.innerHTML=esc(text).replace(/\n/g,"<br>")}});
+      {onText:({text})=>{ui.feyn=text;const el=document.querySelector("#v-study .hist div");if(el)el.innerHTML=esc(text).replace(/\n/g,"<br>")}});
   }catch(e){ui.feyn=e?.text||aiErr(e)}
   busy=false;renderStudy();$("#feynTopic").value=topic;$("#feynTxt").value=txt;
 }
@@ -1592,10 +1734,24 @@ function renderHelp(){
     ${it(ico("left")+ico("right"),"En haut de chaque page : change le jour affiché.")}
     ${it(ico("hourglass"),"Le temps qu'il te reste : journée, semaine, mois, année, vie.")}
     ${it(ico("cal"),"Agenda : tout ton emploi du temps (cours, sport, révisions, examens, habitudes). « Ajouter un créneau » pour un cours ou un rendez-vous.")}
+    ${it(ico("spark"),"Sport → Coach : écris ce que tu veux (« 4 séances par semaine », « j'ai mal au genou »…). Il propose un programme ; touche « Appliquer » pour le mettre dans ton calendrier.")}
     ${it(ico("cards"),"Études : fiches de révision qui reviennent au bon moment, minuteur Pomodoro, planning jusqu'à l'examen.")}
     ${it(ico("plus"),"Ajoute un suivi depuis le catalogue ou crée le tien.")}
     ${it("Icône","Touche l'icône colorée d'une carte pour la modifier ou la supprimer.")}
   </div>`;
+}
+function aiSettings(){
+  if(IN_CLAUDE)return `<div class="panel"><h2 class="h2 fg">IA</h2><p class="note ok">Dans Claude, l'IA est déjà active (coach sport, repas, fiches). Rien à régler.</p></div>`;
+  const k=S.settings.apiKey;
+  return `<div class="panel"><div class="panel-head"><h2 class="h2 fg">IA (clé API Claude)</h2>${aiBadge()}</div>
+    ${k?`<p class="note ok">Clé enregistrée : ••••${esc(k.slice(-4))}. Le coach, l'estimation des repas, les fiches et le planning utilisent l'IA (modèle Claude Opus 5.5).</p>
+      <div class="btns"><button class="btn" data-a="testKey" ${busy?"disabled":""}>Tester</button><button class="btn danger" data-a="delKey">Supprimer la clé</button></div>`
+    :`<p class="note">Pour avoir l'IA dans l'appli installée, il faut une clé API Claude (payante, à l'usage) :</p>
+      <ol class="tips"><li>Va sur <b>console.anthropic.com</b> et crée un compte.</li><li>Billing : ajoute un peu de crédit (par exemple 5 $) et fixe une limite de dépense.</li><li>API Keys → « Create Key », puis copie la clé ici.</li></ol>
+      <input class="in" id="apiKeyIn" type="password" autocomplete="off" placeholder="sk-ant-…">
+      <button class="btn primary" data-a="saveKey">Enregistrer la clé</button>`}
+    ${ui.keyStatus?`<p class="note ${ui.keyStatus.cls}">${esc(ui.keyStatus.msg)}</p>`:""}
+    <p class="note">Coût : quelques centimes par message du coach. La clé reste uniquement sur ce téléphone, n'est jamais mise dans tes sauvegardes, et ne doit être partagée avec personne.</p></div>`;
 }
 function renderSettings(){
   $("#v-settings").innerHTML=pageHead("Réglages","","more")+`<div class="panel">
@@ -1603,6 +1759,7 @@ function renderSettings(){
       <label class="f"><span class="q">Date de naissance</span><input class="in" type="date" data-c="birth" value="${esc(S.settings.birth)}" max="${TK}"></label>
       <label class="f"><span class="q">Espérance de vie (ans)</span><input class="in" type="number" min="30" max="120" data-c="life" value="${S.settings.life}"></label>
     </div><p class="note">Sert au calcul du temps restant.</p></div>
+    ${aiSettings()}
     <div class="panel"><h2 class="h2 fg">Taille de l'affichage</h2>
       <div class="seg">${SCALES.map(([z,l])=>`<button data-a="scale" data-v="${z}" aria-pressed="${(+S.settings.scale||.85)===z}">${l}</button>`).join("")}</div>
       <p class="note">Rend le texte et les boutons plus petits ou plus grands dans toute l'appli.</p></div>
@@ -1807,9 +1964,16 @@ const A={
   addDay:()=>{const P=S.workout.program;P.days.push({name:`Jour ${String.fromCharCode(65+P.days.length)}`,ex:[]});save();renderSport()},
   delDay:d=>{const P=S.workout.program,i=+d.d;if(P.days.length<2){toast("Garde au moins une séance");return}
     P.days.splice(i,1);Object.entries(S.workout.cal).forEach(([k,s])=>{if(s.day===i&&!s.done)delete S.workout.cal[k];else if(s.day>i)s.day--;else if(s.day===i)s.day=0});save();renderSport()},
-  aiGen:()=>aiGenerate(),
-  aiMod:()=>{const t=$("#cMod").value.trim();if(!t){toast("Écris ce que tu veux changer");return}aiGenerate(t)},
-  undoProg:()=>{const W=S.workout;[W.program,W.prev]=[W.prev,null];planWeeks(W,4,TODAY);sportStatus={msg:"Ancien programme restauré.",cls:"ok"};save();renderSport()},
+  coachSend:()=>{const t=$("#coachIn").value;if(!t.trim()){toast("Écris d'abord ton message");return}$("#coachIn").value="";coachSend(t)},
+  coachQuick:d=>coachSend(d.q),
+  coachForm:()=>{const p=S.workout.profile;coachSend(`Propose-moi un programme : ${p.days} séances par semaine de ${p.minutes} min, objectif ${GOALS[p.goal].toLowerCase()}, niveau ${LEVELS[p.level].toLowerCase()}.`)},
+  coachClear:()=>{S.workout.chat=[];save();renderSport()},
+  applyProp:d=>{const m=S.workout.chat[+d.i];if(!m?.prop)return;applyProgram(m.prop,m.profile);
+    S.workout.chat.forEach(x=>{if(x.prop)x.applied=false});m.applied=true;save();renderSport();window.scrollTo(0,0);toast("Programme appliqué ✓")},
+  seeProg:()=>{ui.openDay=0;renderSport();$("#prog")?.scrollIntoView({behavior:"smooth"})},
+  hideApplied:()=>{ui.applied=null;renderSport()},
+  undoProg:()=>{const W=S.workout;[W.program,W.prev]=[W.prev,null];planWeeks(W,4,TODAY);(W.chat||[]).forEach(x=>{x.applied=false});
+    ui.applied=null;save();renderSport();toast("Ancien programme restauré")},
   // food
   meal:d=>{ui.meal=d.m;keepFoodForm()},
   toggleGoals:()=>{ui.showGoals=!ui.showGoals;renderFood()},
@@ -1827,13 +1991,20 @@ const A={
     const kcal=r0(bmr*+p.act+(p.goal==="prise"?300:p.goal==="perte"?-400:0)),pr=r0(w*(p.goal==="maintien"?1.6:2)),fat=r0(w*.9);
     S.food.goals={kcal,p:pr,f:fat,c:Math.max(0,r0((kcal-pr*4-fat*9)/4))};save();renderFood();toast(`Objectif : ${kcal} kcal · ${pr} g de protéines`)},
   exportData:()=>{
-    const data=JSON.stringify({...S,exported:TK}),name=`habitpix-sauvegarde-${TK}.json`;
+    const data=JSON.stringify({...S,settings:{...S.settings,apiKey:undefined},exported:TK}),name=`habitpix-sauvegarde-${TK}.json`;
     if(DL){DL.save({filename:name,data}).then(()=>{markBackup();toast("Sauvegarde prête")}).catch(e=>{if(e?.code!=="cancelled")toast("Sauvegarde impossible")});return}
     if(window.top===window.self){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);markBackup();toast("Sauvegarde téléchargée : range-la dans Drive ou envoie-la-toi par mail");return}
     navigator.clipboard?.writeText(data).then(()=>{markBackup();toast("Données copiées dans le presse-papiers")},()=>toast("Sauvegarde impossible ici"))},
+  saveKey:()=>{const k=$("#apiKeyIn").value.trim();if(!/^sk-ant-/.test(k)){ui.keyStatus={msg:"Ce n'est pas une clé Claude : elle commence par « sk-ant- ».",cls:"bad"};renderSettings();return}
+    S.settings.apiKey=k;ui.keyStatus=null;save();A.testKey()},
+  delKey:()=>{delete S.settings.apiKey;sdkClient=null;ui.keyStatus={msg:"Clé supprimée.",cls:"ok"};save();renderSettings()},
+  testKey:async()=>{busy=true;ui.keyStatus={msg:"Test en cours…",cls:""};renderSettings();
+    try{await apiCall("Réponds seulement : OK",{tier:"quick"});ui.keyStatus={msg:"✓ L'IA fonctionne.",cls:"ok"}}
+    catch(e){ui.keyStatus={msg:aiErr(e),cls:"bad"}}
+    busy=false;renderSettings()},
   scale:d=>{S.settings.scale=+d.v;save();applyScale();render()},
   snoozeBackup:()=>{S.settings.backupSnooze=iso(addDays(TODAY,3));save();render()},
-  confirmImport:()=>{S=ui.pendingImport.data;delete S.exported;if(!S.notes)S.notes={};if(!S.settings)S.settings={birth:iso(new Date(TODAY.getFullYear()-25,0,1)),life:80};migrate();applyScale();
+  confirmImport:()=>{const key=S.settings.apiKey;S=ui.pendingImport.data;delete S.exported;if(!S.notes)S.notes={};if(!S.settings)S.settings={birth:iso(new Date(TODAY.getFullYear()-25,0,1)),life:80};migrate();if(key)S.settings.apiKey=key;applyScale();
     ui.pendingImport=null;S.settings.lastBackup=TK;save();render();toast("Données restaurées")},
   reset:()=>{if(!ui.confirmReset){ui.confirmReset=true;render();return}
     const fresh=sampleState();S={v:2,habits:[],journal:{},week:{},notes:{},settings:S.settings,food:{...fresh.food,log:{},notes:{},weight:{}},workout:{...fresh.workout,cal:{}},agenda:{events:[],workoutTime:"18:00"},study:{subjects:[],cards:[],plan:[],log:{},planTime:"17:00",pomo:{work:25,brk:5}}};
