@@ -232,8 +232,8 @@ textarea.in{height:auto;min-height:84px;padding:8px;resize:vertical}
 .date[aria-pressed="true"] .num{background:var(--white);color:var(--ink)}
 .date .dd{font-family:var(--font-pixel);font-size:11px;line-height:1.3;text-align:left;text-transform:uppercase;min-width:0}
 .date .dd small{display:block;color:var(--muted);font-size:9px}
-.tabs{display:grid;grid-template-columns:repeat(5,1fr);padding-block:8px 10px}
-.tab{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:var(--font-pixel);font-size:10px;color:var(--muted);text-transform:uppercase;padding:4px 0}
+.tabs{display:grid;grid-template-columns:repeat(6,1fr);padding-block:8px 10px}
+.tab{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:var(--font-pixel);font-size:9px;min-width:0;color:var(--muted);text-transform:uppercase;padding:4px 0}
 .tab svg{width:28px;height:28px}
 .tab[aria-selected="true"]{color:var(--fg)}
 
@@ -308,6 +308,28 @@ textarea.in{height:auto;min-height:84px;padding:8px;resize:vertical}
   .bar .tail{display:none}
   .seg button{font-size:9px}
 }
+.tl{display:flex;flex-direction:column;gap:6px}
+.tl-item{display:flex;gap:10px;align-items:stretch;background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:8px 10px;text-align:left;width:100%;color:var(--fg)}
+.tl-item .time{width:50px;flex:none;font-family:var(--font-pixel);font-size:11px;color:var(--muted);padding-top:3px;font-variant-numeric:tabular-nums;line-height:1.4}
+.tl-item .stripe{width:6px;flex:none;border-radius:3px;background:var(--cd)}
+.tl-item.done{opacity:.5}
+.tl-item.done .row-t{text-decoration:line-through}
+.week-day{display:flex;gap:10px;align-items:flex-start;border:0;border-top:2px solid var(--raise);padding:8px 0;background:none;width:100%;text-align:left;color:var(--fg)}
+.week-day.today .wd-n{color:#ffd23f}
+.week-day .wd-n{width:46px;flex:none;font-family:var(--font-pixel);font-size:11px;line-height:1.4;text-transform:uppercase}
+.chips{display:flex;flex-wrap:wrap;gap:4px;flex:1;min-width:0}
+.mchip{font-size:16px;background:var(--cl);color:var(--ci);border-radius:6px;padding:1px 6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exam-chips{display:flex;gap:8px;flex-wrap:wrap}
+.exam{font-family:var(--font-pixel);font-size:11px;letter-spacing:.04em;background:var(--cl);color:var(--ci);padding:6px 8px;border-radius:8px}
+.timer{font-size:76px;text-align:center;font-variant-numeric:tabular-nums;line-height:1;color:var(--tc,#ff5a7a)}
+.flash{min-height:150px;display:grid;place-items:center;text-align:center;font-size:26px;background:var(--raise);border-radius:12px;padding:16px;overflow-wrap:anywhere}
+.flash.ans{border:2px dashed var(--good);font-size:24px}
+.gear{display:flex;gap:6px;flex-wrap:wrap}
+.gear button{height:36px;border-radius:8px;border:2px solid var(--line);background:var(--raise);font-size:17px;padding:0 10px}
+.gear button[aria-pressed="true"]{background:#e2ad12;border-color:#e2ad12;color:var(--ink)}
+.subj-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:2px solid var(--raise)}
+.subj-row:first-child{border-top:0}
+.dot{width:14px;height:14px;flex:none;background:var(--cd);border-radius:3px}
 @media (max-width:345px){.brand .hb{display:none}.menu-grid{grid-template-columns:1fr}}
 </style>
 
@@ -348,6 +370,8 @@ textarea.in{height:auto;min-height:84px;padding:8px;resize:vertical}
     <section class="view" id="v-more" hidden></section>
     <section class="view" id="v-help" hidden></section>
     <section class="view" id="v-settings" hidden></section>
+    <section class="view" id="v-agenda" hidden></section>
+    <section class="view" id="v-study" hidden></section>
   </main>
 
   <footer class="bottom pad">
@@ -424,6 +448,8 @@ const BMP={
   menu:["........","XXXXXXXX","........","XXXXXXXX","........","XXXXXXXX","........","........"],
   gear:["...XX...",".X.XX.X.","..XXXX..","XXX..XXX","XXX..XXX","..XXXX..",".X.XX.X.","...XX..."],
   help:["..XXXX..",".X....X.",".....X..","....X...","...X....","........","...X....","........"],
+  grip:["..X.X.X.","..X.X.X.","X.X.X.X.","X.X.X.X.","XXXXXXX.","XXXXXXX.",".XXXXX..","..XXX..."],
+  cards:["..XXXXXX","..X....X","XXXXXX.X","X....X.X","X.XX.X.X","X....XXX","X.XX.X..","XXXXXX.."],
   undo:["..X.....",".XX.....","XXXXXX..",".XX...X.","..X....X",".......X","....XXX.","........"]
 };
 function ico(name){
@@ -519,9 +545,11 @@ const CATALOG=[
   T("Promener le chien","Maison","paw","leaf",{type:"count",target:2,unit:"sorties"}),
   T("Faire les courses prévues","Maison","cart","mint",{freq:1}),
   T("Noter ses dépenses","Finances","coin","sun",{moment:"Soir"}),
+  T("Réviser","Esprit","cards","rose",{type:"auto",src:"study",moment:"Soir",desc:"25 min ou 10 fiches",ident:"Je suis quelqu'un qui apprend"}),
+  T("Doigts (poutre / gripper)","Sport","grip","sun",{freq:3,moment:"Soir",desc:"Force des doigts pour l'escalade",mini:"1 suspension de 10 s"}),
   T("Mettre de côté","Finances","target","leaf",{freq:3,mini:"1 € de côté"})
 ];
-const typeLabel=h=>h.type==="count"?`${h.target} ${h.unit}`:h.type==="auto"?({prot:"Auto · nutrition",kcal:"Auto · nutrition",workout:"Auto · sport"}[h.src]):h.freq?`${h.freq}x / semaine`:"Oui / non";
+const typeLabel=h=>h.type==="count"?`${h.target} ${h.unit}`:h.type==="auto"?({prot:"Auto · nutrition",kcal:"Auto · nutrition",workout:"Auto · sport",study:"Auto · études"}[h.src]):h.freq?`${h.freq}x / semaine`:"Oui / non";
 
 /* ================= food database (par portion) ================= */
 // [nom, portion, grammes de la portion (null = à l'unité), kcal, prot, gluc, lip]
@@ -554,12 +582,34 @@ const POOL={
 const FB=[["legs","push","pull","hinge","shoulders","core","arms"],["hinge","pull","push","legs","arms","core","shoulders"],["legs","shoulders","pull","push","hinge","core","arms"]];
 const UP=["push","pull","shoulders","pull","arms","push","core"],LO=["legs","hinge","legs","hinge","core","legs","core"];
 const PU=["push","shoulders","push","shoulders","arms","core","push"],PL=["pull","pull","hinge","shoulders","arms","core","pull"];
+// matériel disponible (à la maison par défaut : celui de l'utilisateur)
+const GEAR={halteres:"Haltères (barres à une main + disques)",chaise:"Chaise romaine",poutre:"Poutre d'escalade",gripper:"Rétracteur pour doigts",extenseur:"Extenseur pour doigts",
+  barre:"Barre de traction",banc:"Banc",elastiques:"Élastiques",salle:"Salle de sport"};
+const MY_GEAR=["halteres","chaise","poutre","gripper","extenseur"];
+function gearPool(g){
+  const has=x=>g.includes(x),H=has("halteres"),P=has("poutre"),C=has("chaise");
+  const pool=has("salle")?JSON.parse(JSON.stringify(POOL.salle)):{
+    push:H?[has("banc")?"Développé couché haltères":"Développé au sol haltères","Pompes","Pompes lestées ou déclinées"]:POOL.corps.push,
+    pull:[...(has("barre")?["Tractions"]:P?["Tractions à la poutre (grandes prises)"]:[]),...(H?["Rowing haltère un bras","Rowing penché haltères"]:["Rowing serviette","Superman"]),...(P?["Suspension active à la poutre (omoplates)"]:[])],
+    legs:H?["Goblet squat","Fentes haltères","Split squat bulgare haltères"]:POOL.corps.legs,
+    hinge:[...(C?["Extensions lombaires à la chaise romaine"]:[]),H?"Soulevé de terre roumain haltères":"Good morning","Pont fessier une jambe"],
+    shoulders:H?["Développé épaules haltères","Élévations latérales","Oiseau haltères"]:POOL.corps.shoulders,
+    arms:H?["Curl haltères","Extension triceps haltère","Curl marteau"]:POOL.corps.arms,
+    core:[...(C?["Relevés de buste à la chaise romaine","Russian twist à la chaise romaine"]:[]),P?"Relevés de genoux suspendu à la poutre":"Relevés de jambes","Gainage"]
+  };
+  pool.grip=[...(P?["Suspensions à la poutre"]:[]),...(has("gripper")?["Rétracteur pour doigts"]:[]),...(has("extenseur")?["Extenseur pour doigts"]:[])];
+  return pool;
+}
+const GRIP={"Suspensions à la poutre":{sets:5,reps:"6 × (7 s / 3 s)",rest:"2 min",note:"Grandes prises, pieds au sol pour alléger si besoin. Jamais à froid."},
+  "Rétracteur pour doigts":{sets:3,reps:"10-15 / main",rest:"60 s",note:"Serre lentement, tiens 1 s fermé."},
+  "Extenseur pour doigts":{sets:3,reps:"20-25",rest:"45 s",note:"Muscles antagonistes : protège les doigts et les coudes."}};
+const gearText=g=>(g||[]).map(x=>GEAR[x]).filter(Boolean).join(", ")||"aucun (poids du corps)";
 const SCHED={2:[0,3],3:[0,2,4],4:[0,1,3,4],5:[0,1,2,3,4],6:[0,1,2,3,4,5]};
 const GOALS={muscle:"Prise de muscle",force:"Force",perte:"Perte de gras",endurance:"Endurance",forme:"Remise en forme"};
 const LEVELS={debut:"Débutant",inter:"Intermédiaire",avance:"Avancé"};
 const EQUIP={salle:"Salle complète",halteres:"Haltères à la maison",corps:"Poids du corps"};
 function localProgram(p){
-  const n=+p.days,pool=POOL[p.equip]||POOL.salle,count=+p.minutes<=30?4:+p.minutes<=45?5:+p.minutes<=60?6:7;
+  const n=+p.days,pool=gearPool(p.gear||MY_GEAR),count=+p.minutes<=30?4:+p.minutes<=45?5:+p.minutes<=60?6:7;
   let split;
   if(n<=3) split=FB.slice(0,n).map((pat,i)=>["Full body",pat,i]);
   else if(n===4) split=[["Haut du corps",UP,0],["Bas du corps",LO,0],["Haut du corps",UP,1],["Bas du corps",LO,1]];
@@ -578,8 +628,11 @@ function localProgram(p){
     const ex=pat.slice(0,count).map((key,i)=>{
       const k=(used[key]=(used[key]??-1)+1),list=pool[key];
       const nm=list[(k+variant+(n<=3?di:0))%list.length];
-      return {n:nm,...scheme(i),kg:0,note:key==="core"?"Gainage : en secondes":""};
+      return {n:nm,...scheme(i),kg:0,note:nm==="Gainage"?"Gainage : en secondes":nm.includes("chaise romaine")?"Contrôle la descente, dos neutre":""};
     });
+    // finisher doigts/avant-bras avec le matériel d'escalade
+    if(pool.grip.length){const g=pool.grip[di%pool.grip.length];ex.push({n:g,...GRIP[g],kg:0});
+      if(g!=="Extenseur pour doigts"&&pool.grip.includes("Extenseur pour doigts"))ex.push({n:"Extenseur pour doigts",...GRIP["Extenseur pour doigts"],kg:0});}
     return {name:`Jour ${String.fromCharCode(65+di)} · ${name}`,ex};
   });
   return {name:`${GOALS[p.goal]} · ${n} j/sem`,schedule:SCHED[n]||SCHED[3],days,
@@ -603,8 +656,14 @@ try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
 if(!S||S.v!==2) S=sampleState();
 if(!S.notes)S.notes={};
 if(!S.settings)S.settings={birth:iso(new Date(TODAY.getFullYear()-25,0,1)),life:80};
+migrate();
+function migrate(){
+  if(!S.workout.profile.gear){S.workout.profile.gear=[...MY_GEAR];S.workout.gearNotice=true}
+  if(!S.agenda)S.agenda={events:[],workoutTime:"18:00"};
+  if(!S.study)S.study={subjects:[],cards:[],plan:[],log:{},planTime:"17:00",pomo:{work:25,brk:5}};
+}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
-let ui={openDay:0,qShift:0,noteFor:null,noteRate:0,jOpen:{},hist:"",tab:"habits",cat:"Tout",sel:TK,q:"",sort:false,searchOpen:false,calM:new Date(TODAY.getFullYear(),TODAY.getMonth(),1),calPick:null,meal:null,aiFood:[],foodQ:"",showGoals:false,addTab:"cat",catQ:"",edit:null,pick:{color:"leaf",icon:"run"},confirmDel:false,confirmReset:false};
+let ui={agSel:TK,agMode:"day",sheetMode:null,ev:null,review:null,aiCards:[],studyStatus:{msg:"",cls:""},feyn:"",openDay:0,qShift:0,noteFor:null,noteRate:0,jOpen:{},hist:"",tab:"habits",cat:"Tout",sel:TK,q:"",sort:false,searchOpen:false,calM:new Date(TODAY.getFullYear(),TODAY.getMonth(),1),calPick:null,meal:null,aiFood:[],foodQ:"",showGoals:false,addTab:"cat",catQ:"",edit:null,pick:{color:"leaf",icon:"run"},confirmDel:false,confirmReset:false};
 
 function sampleState(){
   const habit=(name,extra)=>{const c=CATALOG.find(t=>t.name===name);return {...c,id:uid(),log:{},...extra}};
@@ -623,7 +682,7 @@ function sampleState(){
       habit("Coucher avant 23 h",{log:seedLog(5,30,.5,{miss:[1]})})
     ],
     food:{goals:{kcal:2200,p:150,c:240,f:70},profile:{sex:"h",age:25,h:178,w:75,act:"1.55",goal:"prise"},log:{},notes:{},weight:{}},
-    workout:{profile:{goal:"muscle",level:"inter",days:"3",minutes:"60",equip:"salle",notes:""},program:null,prev:null,cal:{}}
+    workout:{profile:{goal:"muscle",level:"inter",days:"3",minutes:"60",gear:[...MY_GEAR],notes:""},program:null,prev:null,cal:{}}
   };
   // nutrition : 55 jours d'exemple
   const r=rng(42),F=n=>foodByName(n);
@@ -647,6 +706,19 @@ function sampleState(){
   const r2=rng(9);
   for(let i=70;i>=1;i--){const d=addDays(TODAY,-i);
     if(S.workout.program.schedule.includes(monIdx(d))){S.workout.cal[iso(d)]={day:(i%3),done:r2()<.8}}}
+  // agenda & études : exemples
+  const sub=(name,color,days)=>({id:uid(),name,color,exam:days==null?"":iso(addDays(TODAY,days))});
+  const maths=sub("Maths","blue",18),ang=sub("Anglais","leaf",30),hist=sub("Histoire","sun",null);
+  const card=(s,q,a,box,due)=>({id:uid(),sub:s.id,q,a,box,due:iso(addDays(TODAY,due))});
+  S.study={subjects:[maths,ang,hist],planTime:"17:00",pomo:{work:25,brk:5},log:{},plan:[],
+    cards:[card(maths,"Dérivée de x²","2x",2,0),card(maths,"Discriminant de ax² + bx + c","Δ = b² − 4ac",1,0),card(maths,"Racines si Δ > 0","x = (−b ± √Δ) / 2a",1,0),
+      card(maths,"Dérivée de eˣ","eˣ",3,2),card(ang,"To achieve","Accomplir, atteindre",1,0),card(ang,"Although","Bien que",2,1),
+      card(hist,"Chute du mur de Berlin","9 novembre 1989",1,0),card(hist,"Début de la Première Guerre mondiale","28 juillet 1914",2,3)]};
+  for(let i=1;i<=6;i++)S.study.log[iso(addDays(TODAY,-i))]={min:[25,50,0,25,75,25][i-1],cards:[12,0,8,15,0,10][i-1]};
+  localStudyPlan(maths.id,["Second degré","Dérivées","Exponentielle","Suites"],maths.exam,45).forEach(x=>S.study.plan.push(x));
+  S.agenda={workoutTime:"18:00",events:[
+    {id:uid(),title:"Cours (exemple)",type:"cours",days:[0,1,2,3,4],start:"08:00",end:"16:00",note:"Touche pour modifier ou supprimer"},
+    {id:uid(),title:"Escalade en salle (exemple)",type:"sport",days:[5],start:"10:00",end:"12:00",note:""}]};
   return S;
 }
 function planWeeks(W,weeks,from){
@@ -665,6 +737,7 @@ function totals(k){
 function score(h,k){
   if(h.type==="auto"){
     if(h.src==="workout") return S.workout.cal[k]?.done?1:0;
+    if(h.src==="study"){const l=S.study.log[k];if(!l)return 0;return l.min>=25||l.cards>=10?1:l.min>0||l.cards>0?.5:0}
     const t=totals(k),g=S.food.goals;
     if(h.src==="prot") return t.p>=g.p?1:t.p>=.7*g.p?.5:0;
     if(!t.n) return 0;const d=Math.abs(t.kcal-g.kcal)/g.kcal;return d<=.1?1:d<=.2?.5:0;
@@ -753,6 +826,7 @@ function checkBtn(h,k,cls=""){
   if(h.type==="count") return `<button class="check ${cls} ${state}" data-a="inc" data-id="${h.id}" aria-label="Ajouter ${h.step||1} ${esc(h.unit)}">${h.log[k]||0}/${h.target}</button>`;
   if(h.type==="auto"){
     if(h.src==="workout") return `<button class="check ${cls} ${state}" data-a="tab" data-tab="sport" aria-label="Ouvrir le sport">${ico("dumb")}</button>`;
+    if(h.src==="study") return `<button class="check ${cls} ${state}" data-a="tab" data-tab="study" aria-label="Ouvrir les études">${S.study.log[k]?.min||0}<br>min</button>`;
     const t=totals(k),txt=h.src==="prot"?`${r0(t.p)}<br>/${S.food.goals.p}g`:`${r0(t.kcal)}<br>kcal`;
     return `<button class="check ${cls} ${state}" data-a="tab" data-tab="food" aria-label="Ouvrir la nutrition">${txt}</button>`;
   }
@@ -905,7 +979,9 @@ function coach(){
       <div class="f"><label class="q" for="cDays">Jours / semaine</label><select class="in" id="cDays" data-c="prof" data-f="days">${opt({2:"2",3:"3",4:"4",5:"5",6:"6"},p.days)}</select></div>
       <div class="f"><label class="q" for="cMin">Durée</label><select class="in" id="cMin" data-c="prof" data-f="minutes">${opt({30:"30 min",45:"45 min",60:"1 h",75:"1 h 15",90:"1 h 30"},p.minutes)}</select></div>
     </div>
-    <div class="f"><label class="q" for="cEq">Matériel</label><select class="in" id="cEq" data-c="prof" data-f="equip">${opt(EQUIP,p.equip)}</select></div>
+    <div class="f"><span class="q">Mon matériel (toujours pris en compte)</span>
+      <div class="gear">${Object.entries(GEAR).map(([k,l])=>`<button data-a="gear" data-g="${k}" aria-pressed="${(p.gear||[]).includes(k)}">${l}</button>`).join("")}</div></div>
+    ${S.workout.gearNotice?`<p class="note ok">Ton matériel est enregistré. Touche « Générer mon programme » pour l'utiliser.</p>`:""}
     <div class="f"><label class="q" for="cNotes">Infos pour le coach</label><textarea class="in" id="cNotes" data-c="prof" data-f="notes" placeholder="Blessures, exercices préférés, muscles à prioriser…">${esc(p.notes)}</textarea></div>
     <button class="btn primary" data-a="aiGen" ${busy?"disabled":""}>${ico("spark")}Générer mon programme</button>
     <div class="f"><label class="q" for="cMod">Modifier le programme actuel</label>
@@ -926,7 +1002,7 @@ async function aiGenerate(modify){
 schedule = jours d'entraînement (0 = lundi … 6 = dimanche), autant que de séances par semaine. kg = charge de départ conseillée (0 si inconnue ou poids du corps). Tout en français.`;
   const prompt=modify
     ?`Tu es coach de musculation. Voici le programme actuel de l'utilisateur en JSON :\n${JSON.stringify({name:W.program.name,schedule:W.program.schedule,days:W.program.days,tips:W.program.tips})}\n\nDemande de modification : "${modify}"\nGarde tout le reste identique (y compris les charges kg déjà notées). ${fmt}`
-    :`Tu es coach de musculation. Crée un programme d'entraînement hebdomadaire sûr et efficace.\nObjectif : ${GOALS[p.goal]}. Niveau : ${LEVELS[p.level]}. ${p.days} séances par semaine de ${p.minutes} minutes. Matériel : ${EQUIP[p.equip]}.\nInfos de l'utilisateur : ${p.notes||"aucune"}.\n${fmt}`;
+    :`Tu es coach de musculation. Crée un programme d'entraînement hebdomadaire sûr et efficace.\nObjectif : ${GOALS[p.goal]}. Niveau : ${LEVELS[p.level]}. ${p.days} séances par semaine de ${p.minutes} minutes. Matériel disponible à la maison (utilise UNIQUEMENT ce matériel, intègre-le intelligemment, y compris le travail des doigts et des avant-bras si présent) : ${gearText(p.gear)}.\nInfos de l'utilisateur : ${p.notes||"aucune"}.\n${fmt}`;
   busy=true;sportStatus={msg:"L'IA prépare ton programme… (jusqu'à une minute)",cls:""};renderSport();
   let prog=null;
   try{
@@ -938,7 +1014,7 @@ schedule = jours d'entraînement (0 = lundi … 6 = dimanche), autant que de sé
     prog=localProgram(p);
     sportStatus=e?.code==="none"?{msg:"Programme créé avec le modèle intégré et planifié sur 4 semaines.",cls:"ok"}:{msg:aiErr(e)+" Programme créé avec le modèle intégré.",cls:"bad"};
   }
-  W.prev=W.program;W.program=prog;planWeeks(W,4,TODAY);busy=false;save();render();
+  W.prev=W.program;W.program=prog;W.gearNotice=false;planWeeks(W,4,TODAY);busy=false;save();render();
 }
 function icsExport(){
   const W=S.workout,pad=n=>String(n).padStart(2,"0");
@@ -1148,7 +1224,7 @@ function renderJournal(){
     rows=rows.filter(r=>r[1]||r[2]).sort((a,b)=>a[0]<b[0]?1:-1).slice(0,30);
     hist=rows.length?`<div class="hist">${rows.map(([d,a,b])=>`<div><b>${human(d)}${a?" · "+esc(a):""}</b><br>${esc(b||"")}</div>`).join("")}</div>`:`<p class="note">Aucune note pour l'instant.</p>`;
   }
-  $("#v-journal").innerHTML=pageHead("Journal","Écris sur ta journée et sur chaque activité. Touche une activité pour l'ouvrir.")+dateBar()+`
+  $("#v-journal").innerHTML=pageHead("Journal","Écris sur ta journée et sur chaque activité. Touche une activité pour l'ouvrir.","more")+dateBar()+`
     <div class="panel">
       <h2 class="h2 fg">Ma journée</h2>
       <div class="moods">${["Dur","Bof","Ok","Bien","Top"].map((m,i)=>`<button class="mood" data-a="mood" data-v="${i+1}" aria-pressed="${j.mood===i+1}">${m}</button>`).join("")}</div>
@@ -1209,10 +1285,255 @@ function renderTime(){
 }
 setInterval(()=>{const e=document.getElementById("dayLeft");if(e&&ui.tab==="time")e.textContent=dayLeftTxt()},30000);
 
+/* ================= agenda ================= */
+const EV_TYPES={cours:["Cours","blue"],travail:["Travail","mint"],revision:["Révision","rose"],sport:["Sport","sun"],perso:["Perso","lilac"],rdv:["Rendez-vous","leaf"]};
+const subj=id=>S.study.subjects.find(x=>x.id===id);
+const hm=t=>t||"";
+function itemsFor(k){
+  const wd=monIdx(parse(k)),out=[];
+  S.agenda.events.forEach(e=>{if(e.date?e.date===k:(e.days||[]).includes(wd))
+    out.push({t:e.start,end:e.end,title:e.title,color:EV_TYPES[e.type]?.[1]||"lilac",sub:e.note||EV_TYPES[e.type]?.[0]||"",a:`data-a="editEv" data-id="${e.id}"`})});
+  const s=S.workout.cal[k],D=s&&S.workout.program.days[s.day];
+  if(D)out.push({t:S.agenda.workoutTime||"18:00",title:"Séance · "+D.name,color:"sun",sub:`${D.ex.length} exercices${s.done?" · terminée":""}`,a:`data-a="goSport" data-k="${k}"`,done:s.done});
+  S.study.plan.filter(x=>x.date===k).forEach(x=>{const sb=subj(x.sub);
+    out.push({t:x.start,title:x.title,color:sb?.color||"rose",sub:`${sb?sb.name+" · ":""}${x.min} min · touche quand c'est fait`,a:`data-a="planDone" data-id="${x.id}"`,done:x.done})});
+  S.study.subjects.filter(x=>x.exam===k).forEach(x=>out.unshift({t:"",title:"Examen · "+x.name,color:x.color,sub:"Dors bien la veille !",a:`data-a="tab" data-tab="study"`}));
+  return out.sort((a,b)=>(a.t||"")<(b.t||"")?-1:(a.t||"")>(b.t||"")?1:0);
+}
+function examChips(){
+  const up=S.study.subjects.filter(x=>x.exam&&x.exam>=TK).sort((a,b)=>a.exam<b.exam?-1:1);
+  return up.length?`<div class="exam-chips">${up.map(x=>{const n=Math.round((parse(x.exam)-TODAY)/DAY);return `<span class="exam" style="${cssVars(x.color)}">${esc(x.name)} · ${n?"J-"+n:"aujourd'hui"}</span>`}).join("")}</div>`:"";
+}
+function renderAgenda(){
+  const k=ui.agSel,d=parse(k);
+  const bar=`<div class="datebar"><button class="icon-btn" data-a="agShift" data-d="${ui.agMode==="week"?-7:-1}" aria-label="Précédent">${ico("left")}</button>
+    <div class="lbl">${ui.agMode==="week"?`Semaine du ${mondayOf(d).getDate()} ${MONTHS[mondayOf(d).getMonth()]}`:(k===TK?"Aujourd'hui · ":"")+`${WD_L[monIdx(d)]} ${d.getDate()} ${MONTHS[d.getMonth()]}`}</div>
+    <button class="icon-btn" data-a="agShift" data-d="${ui.agMode==="week"?7:1}" aria-label="Suivant">${ico("right")}</button>
+    ${k===TK?"":`<button class="btn small" data-a="agToday">Auj.</button>`}</div>`;
+  let body="";
+  if(ui.agMode==="day"){
+    const it=itemsFor(k);
+    const habits=["Matin","Midi","Soir"].map(m=>{const l=S.habits.filter(h=>(h.moment||"Matin")===m);if(!l.length)return"";
+      return `<div class="week-day" style="border-top:0"><span class="wd-n">${m}</span><div class="chips">${l.map(h=>`<span class="mchip" style="${cssVars(h.color)}${score(h,k)===1?";opacity:.45;text-decoration:line-through":""}">${esc(h.name)}</span>`).join("")}</div></div>`}).join("");
+    body=`<div class="tl">${it.length?it.map(x=>`<button class="tl-item ${x.done?"done":""}" ${x.a} style="${cssVars(x.color)}">
+        <span class="time">${x.t?hm(x.t)+(x.end?"<br>"+hm(x.end):""):"Jour"}</span><span class="stripe"></span>
+        <span class="row-txt"><span class="row-t" style="display:block">${esc(x.title)}</span><span class="row-s">${esc(x.sub)}</span></span></button>`).join("")
+      :`<div class="empty">Rien de prévu. Ajoute un cours, un rendez-vous ou une séance de révision.</div>`}</div>
+      <button class="btn primary" data-a="addEv">${ico("plus")}Ajouter un créneau</button>
+      <div class="panel"><h2 class="h2 fg">Habitudes du jour</h2>${habits||`<p class="note">Aucune habitude.</p>`}
+        <button class="btn small" data-a="tab" data-tab="habits">Ouvrir mes habitudes</button></div>`;
+  } else {
+    const mon=mondayOf(d);
+    body=`<div class="panel" style="gap:0">${[...Array(7)].map((_,i)=>{const dk=iso(addDays(mon,i)),it=itemsFor(dk),dd=addDays(mon,i);
+      return `<button class="week-day ${dk===TK?"today":""}" data-a="agDay" data-k="${dk}"><span class="wd-n">${WD[i]}<br>${dd.getDate()}</span>
+        <span class="chips">${it.length?it.map(x=>`<span class="mchip" style="${cssVars(x.color)}${x.done?";opacity:.45":""}">${x.t?x.t+" ":""}${esc(x.title)}</span>`).join(""):`<span class="note">Libre</span>`}</span></button>`}).join("")}</div>
+      <button class="btn primary" data-a="addEv">${ico("plus")}Ajouter un créneau</button>`;
+  }
+  $("#v-agenda").innerHTML=pageHead("Agenda","Tout ton emploi du temps au même endroit : cours, séances de sport, révisions, examens et habitudes.")+
+    `<div class="seg"><button data-a="agMode" data-v="day" aria-pressed="${ui.agMode==="day"}">Jour</button><button data-a="agMode" data-v="week" aria-pressed="${ui.agMode==="week"}">Semaine</button></div>`+
+    bar+examChips()+body+
+    `<div class="panel"><div class="grid2">
+      <label class="f"><span class="q">Heure des séances de sport</span><input class="in" type="time" data-c="wTime" value="${esc(S.agenda.workoutTime)}"></label>
+      <label class="f"><span class="q">Heure des révisions</span><input class="in" type="time" data-c="pTime" value="${esc(S.study.planTime)}"></label>
+    </div><p class="note">Les séances viennent de l'onglet Sport, les révisions et examens de l'onglet Études.</p></div>`;
+}
+function eventSheet(){
+  const e=ui.ev,isNew=!S.agenda.events.some(x=>x.id===e.id),once=!!e.date;
+  return `<div class="sheet-h"><h2>${isNew?"Nouveau créneau":"Modifier"}</h2><button class="icon-btn" data-a="closeSheet" aria-label="Fermer">${ico("close")}</button></div>
+    <div class="f"><label class="q" for="evTitle">Titre</label><input class="in" id="evTitle" maxlength="50" value="${esc(e.title)}" placeholder="Cours de maths, dentiste…"></div>
+    <div class="f"><label class="q" for="evType">Type</label><select class="in" id="evType">${Object.entries(EV_TYPES).map(([k,[l]])=>`<option value="${k}" ${k===e.type?"selected":""}>${l}</option>`).join("")}</select></div>
+    <div class="seg" id="evRep"><button type="button" data-a="evRep" data-v="once" aria-pressed="${once}">Une fois</button><button type="button" data-a="evRep" data-v="week" aria-pressed="${!once}">Chaque semaine</button></div>
+    <div class="f" id="evOnce" ${once?"":"hidden"}><label class="q" for="evDate">Date</label><input class="in" type="date" id="evDate" value="${esc(e.date||ui.agSel)}"></div>
+    <div class="f" id="evWeek" ${once?"hidden":""}><span class="q">Jours</span><div class="seg">${WD.map((w,i)=>`<button type="button" data-a="evDay" data-v="${i}" aria-pressed="${(e.days||[]).includes(i)}">${w}</button>`).join("")}</div></div>
+    <div class="grid2"><label class="f"><span class="q">Début</span><input class="in" type="time" id="evStart" value="${esc(e.start)}"></label>
+      <label class="f"><span class="q">Fin</span><input class="in" type="time" id="evEnd" value="${esc(e.end)}"></label></div>
+    <div class="f"><label class="q" for="evNote">Note</label><input class="in" id="evNote" maxlength="80" value="${esc(e.note)}" placeholder="Salle B12, apporter…"></div>
+    <div class="btns">${isNew?"":`<button class="btn danger" data-a="delEv">${ui.confirmDel?"Confirmer":"Supprimer"}</button>`}<button class="btn primary" data-a="saveEv">Enregistrer</button></div>`;
+}
+
+/* ================= études ================= */
+const LEITNER=[0,1,2,4,8,16];
+const STUDY_METHODS=[
+  ["Rappel actif","Teste-toi au lieu de relire : cache la réponse et cherche-la. C'est la méthode la plus efficace mesurée par la recherche. Les fiches l'appliquent."],
+  ["Répétition espacée","Revois une notion à intervalles croissants (1, 2, 4, 8, 16 jours). Les fiches reviennent seules au bon moment."],
+  ["Pomodoro","25 min concentré, téléphone loin, puis 5 min de pause. Toutes les 4 sessions, une grande pause."],
+  ["Technique de Feynman","Explique la notion avec des mots simples, comme à un enfant de 12 ans. Là où tu bloques, c'est ce qu'il faut revoir."],
+  ["Blurting","Après avoir étudié, ferme le cours et écris tout ce dont tu te souviens. Compare, puis complète en couleur."],
+  ["Entrelacement","Mélange les types d'exercices et les chapitres au lieu de faire 20 fois le même. Plus dur sur le moment, mieux retenu."],
+  ["Tests blancs","Fais des sujets d'examen en temps limité, sans notes. Prévu automatiquement la veille de l'examen."],
+  ["Sommeil et sport","Le sommeil fixe ce que tu as appris. Une séance de sport ou une marche avant de réviser aide la concentration."]
+];
+function dueCards(sub){return S.study.cards.filter(c=>(!sub||c.sub===sub)&&c.due<=TK)}
+function studyLog(k){return S.study.log[k]||(S.study.log[k]={min:0,cards:0})}
+let pomo={mode:"work",end:0,left:null,running:false,sub:""};
+const pomoLen=()=>(pomo.mode==="work"?S.study.pomo.work:S.study.pomo.brk)*60;
+const fmtT=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+function pomoLeft(){return pomo.running?Math.max(0,Math.round((pomo.end-Date.now())/1000)):(pomo.left??pomoLen())}
+setInterval(()=>{if(!pomo.running)return;const l=pomoLeft(),el=document.getElementById("pomoTime");if(el)el.textContent=fmtT(l);
+  if(l<=0){pomo.running=false;pomo.left=null;
+    if(pomo.mode==="work"){const g=studyLog(TK);g.min+=S.study.pomo.work;if(pomo.sub){g.subs=g.subs||{};g.subs[pomo.sub]=(g.subs[pomo.sub]||0)+S.study.pomo.work}
+      save();toast("Session terminée ! Pause de "+S.study.pomo.brk+" min");pomo.mode="break"}
+    else{toast("Pause finie, on reprend !");pomo.mode="work"}
+    try{navigator.vibrate?.([200,100,200])}catch(e){}
+    if(ui.tab==="study")renderStudy()}},1000);
+function localCards(txt){
+  const out=[];
+  txt.split(/\n+/).map(l=>l.trim()).filter(Boolean).forEach(l=>{
+    let m=l.match(/^(.+?\?)\s*(.+)$/)||l.match(/^(.+?)\s*(?:\s:\s|\s-\s|\s–\s|=|;|\t|→)\s*(.+)$/);
+    if(m&&m[2])out.push({q:m[1].trim(),a:m[2].trim()});
+  });
+  return out;
+}
+function localStudyPlan(subId,chapters,exam,min){
+  const out=[],end=exam?parse(exam):addDays(TODAY,21),days=Math.max(1,Math.round((end-TODAY)/DAY));
+  const add=(off,title)=>{if(off>=days)return;const k=iso(addDays(TODAY,off));
+    const sameDay=out.filter(x=>x.date===k).length;if(sameDay>=2)return add(off+1,title);
+    out.push({id:uid(),sub:subId,date:k,start:sameDay?"":S?.study?.planTime||"17:00",title,min,done:false})};
+  const span=Math.max(1,Math.floor(days*.6));
+  chapters.forEach((c,i)=>{const d0=Math.floor(i*span/chapters.length);add(d0,"Apprendre · "+c);[1,3,7].forEach(g=>add(d0+g,"Revoir · "+c))});
+  if(exam&&days>1)out.push({id:uid(),sub:subId,date:iso(addDays(end,-1)),start:S?.study?.planTime||"17:00",title:"Test blanc + revue générale",min:Math.max(min,60),done:false});
+  out.forEach((x,i)=>{if(!x.start){const prev=out.filter(y=>y.date===x.date&&y.start)[0];const [h,m]=(prev?.start||"17:00").split(":").map(Number);const t=h*60+m+min+15;x.start=`${String(Math.floor(t/60)%24).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`}});
+  return out;
+}
+function renderStudy(){
+  const subs=S.study.subjects,due=dueCards(),g=S.study.log[TK]||{min:0,cards:0},left=pomoLeft();
+  const subOpts=(sel,empty)=>`${empty?`<option value="">${empty}</option>`:""}${subs.map(x=>`<option value="${x.id}" ${x.id===sel?"selected":""}>${esc(x.name)}</option>`).join("")}`;
+  const upcoming=S.study.plan.filter(x=>x.date>=TK).sort((a,b)=>(a.date+a.start)<(b.date+b.start)?-1:1).slice(0,6);
+  $("#v-study").innerHTML=pageHead("Études","Fiches à réviser au bon moment, minuteur de concentration, planning jusqu'à l'examen.")+examChips()+`
+  <div class="panel">
+    <div class="panel-head"><h2 class="h2 fg">Aujourd'hui</h2><span class="ai-badge ${g.min>=25||g.cards>=10?"on":""}">${g.min} min · ${g.cards} fiches</span></div>
+    <button class="btn primary" data-a="startReview" ${due.length?"":"disabled"}>${ico("cards")}${due.length?`Réviser ${due.length} fiche${due.length>1?"s":""}`:"Aucune fiche à revoir aujourd'hui"}</button>
+  </div>
+  <div class="panel" style="--tc:${pomo.mode==="work"?"#ff5a7a":"#7bd88f"}">
+    <div class="panel-head"><h2 class="h2 fg">Minuteur Pomodoro</h2><span class="ai-badge">${pomo.mode==="work"?"Travail":"Pause"}</span></div>
+    <div class="timer" id="pomoTime">${fmtT(left)}</div>
+    <select class="in" data-c="pomoSub" aria-label="Matière">${subOpts(pomo.sub,"Matière (facultatif)")}</select>
+    <div class="btns"><button class="btn primary" data-a="pomoGo">${pomo.running?"Pause":"Démarrer"}</button><button class="btn" data-a="pomoReset">Recommencer</button><button class="btn small" data-a="pomoSwitch">${pomo.mode==="work"?"Passer à la pause":"Passer au travail"}</button></div>
+    <div class="grid2"><label class="f"><span class="q">Travail (min)</span><input class="in" type="number" min="5" max="90" data-c="pomoW" value="${S.study.pomo.work}"></label>
+      <label class="f"><span class="q">Pause (min)</span><input class="in" type="number" min="1" max="30" data-c="pomoB" value="${S.study.pomo.brk}"></label></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2 class="h2 fg">Mes fiches</h2><span class="note">${S.study.cards.length} fiches</span></div>
+    ${subs.length?subs.map(x=>{const n=S.study.cards.filter(c=>c.sub===x.id).length,dn=dueCards(x.id).length;
+      return `<div class="subj-row" style="${cssVars(x.color)}"><span class="dot"></span><div class="row-txt"><div class="row-t">${esc(x.name)}</div><div class="row-s">${n} fiches · ${dn} à revoir${x.exam?` · examen le ${x.exam.split("-").reverse().slice(0,2).join("/")}`:""}</div></div>
+        <button class="btn small" data-a="startReview" data-sub="${x.id}" ${dn?"":"disabled"}>Réviser</button></div>`}).join(""):`<p class="note">Ajoute d'abord une matière (en bas de la page).</p>`}
+    ${subs.length?`<span class="q" style="padding-top:6px">Nouvelle fiche</span>
+    <select class="in" id="cardSub" aria-label="Matière">${subOpts(ui.cardSub||subs[0]?.id)}</select>
+    <input class="in" id="cardQ" placeholder="Question (recto)" maxlength="200">
+    <input class="in" id="cardA" placeholder="Réponse (verso)" maxlength="300">
+    <button class="btn" data-a="addCard">${ico("plus")}Ajouter la fiche</button>
+    <span class="q" style="padding-top:6px">Créer des fiches depuis ton cours ${aiBadge()}</span>
+    <textarea class="in" id="cardNotes" placeholder="${AI?"Colle ici un passage de ton cours : l'IA en fait des questions/réponses.":"Une fiche par ligne :  question : réponse   (ou  question ? réponse)"}"></textarea>
+    <button class="btn" data-a="aiCards" ${busy?"disabled":""}>${ico("spark")}Créer les fiches</button>
+    ${ui.studyStatus.msg?`<p class="note ${ui.studyStatus.cls}">${esc(ui.studyStatus.msg)}</p>`:""}
+    ${ui.aiCards.length?`<div>${ui.aiCards.map((c,i)=>`<div class="food"><div class="food-main"><div class="food-n">${esc(c.q)}</div><div class="food-d">${esc(c.a)}</div></div><button class="icon-btn" data-a="aiCardDrop" data-i="${i}" aria-label="Retirer">${ico("close")}</button></div>`).join("")}</div>
+      <button class="btn primary" data-a="aiCardsAdd">${ico("plus")}Ajouter ces ${ui.aiCards.length} fiches</button>`:""}`:""}
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2 class="h2 fg">Planning de révision</h2>${aiBadge()}</div>
+    ${subs.length?`<p class="note">Indique tes chapitres : chacun est appris puis revu à J+1, J+3 et J+7, avec un test blanc la veille de l'examen. Tout s'ajoute à l'Agenda.</p>
+    <div class="grid2"><label class="f"><span class="q">Matière</span><select class="in" id="planSub">${subOpts(subs.find(x=>x.exam>=TK)?.id||subs[0].id)}</select></label>
+      <label class="f"><span class="q">Min / séance</span><input class="in" type="number" id="planMin" min="15" max="180" value="45"></label></div>
+    <textarea class="in" id="planCh" placeholder="Un chapitre par ligne"></textarea>
+    <button class="btn primary" data-a="makePlan" ${busy?"disabled":""}>${ico("cal")}Créer mon planning</button>`:`<p class="note">Ajoute une matière avec sa date d'examen pour créer un planning.</p>`}
+    ${upcoming.length?`<span class="q">Prochaines séances</span><div class="tl">${upcoming.map(x=>{const sb=subj(x.sub);return `<button class="tl-item ${x.done?"done":""}" data-a="planDone" data-id="${x.id}" style="${cssVars(sb?.color||"rose")}">
+      <span class="time">${x.date.split("-").reverse().slice(0,2).join("/")}<br>${x.start}</span><span class="stripe"></span><span class="row-txt"><span class="row-t" style="display:block">${esc(x.title)}</span><span class="row-s">${esc(sb?.name||"")} · ${x.min} min</span></span></button>`}).join("")}</div>`:""}
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2 class="h2 fg">Explique-le simplement</h2>${aiBadge()}</div>
+    <p class="note">Technique de Feynman : écris la notion comme si tu l'expliquais à un enfant de 12 ans.</p>
+    <input class="in" id="feynTopic" placeholder="Notion (ex. la dérivée)">
+    <textarea class="in" id="feynTxt" placeholder="Ton explication avec tes mots…"></textarea>
+    ${AI?`<button class="btn" data-a="feynman" ${busy?"disabled":""}>${ico("spark")}Vérifier mon explication</button>`:`<p class="note">Relis-toi : as-tu utilisé des mots simples ? donné un exemple ? Là où tu as hésité, retourne dans ton cours.</p>`}
+    ${ui.feyn?`<div class="hist"><div>${esc(ui.feyn).replace(/\n/g,"<br>")}</div></div>`:""}
+  </div>
+  <div class="panel">
+    <h2 class="h2 fg">Matières</h2>
+    ${subs.map(x=>`<div class="subj-row" style="${cssVars(x.color)}"><span class="dot"></span><div class="row-txt"><div class="row-t">${esc(x.name)}</div></div>
+      <input class="in" type="date" style="width:160px" data-c="exam" data-id="${x.id}" value="${esc(x.exam)}" aria-label="Date d'examen">
+      <button class="icon-btn" data-a="delSub" data-id="${x.id}" aria-label="Supprimer la matière">${ico(ui.confirmSub===x.id?"check":"trash")}</button></div>`).join("")}
+    ${ui.confirmSub?`<p class="note bad">Touche ✓ pour supprimer la matière, ses fiches et son planning.</p>`:""}
+    <div class="grid2"><input class="in" id="subName" placeholder="Nouvelle matière" maxlength="30"><input class="in" type="date" id="subExam" aria-label="Date d'examen (facultatif)"></div>
+    <button class="btn" data-a="addSub">${ico("plus")}Ajouter la matière</button>
+  </div>
+  <div class="panel"><h2 class="h2 fg">Bien réviser : ce qui marche</h2>
+    ${STUDY_METHODS.map(([t,d])=>`<details class="jact"><summary><span class="row-t">${t}</span></summary><p class="note" style="padding-top:6px">${d}</p></details>`).join("")}
+  </div>`;
+}
+function reviewSheet(){
+  const R=ui.review,c=S.study.cards.find(x=>x.id===R.queue[R.i]);
+  if(!c) return `<div class="sheet-h"><h2>Bravo !</h2><button class="icon-btn" data-a="closeSheet" aria-label="Fermer">${ico("close")}</button></div>
+    <div class="flash">${R.done} fiche${R.done>1?"s":""} révisée${R.done>1?"s":""}.<br>${R.fails?`${R.fails} à retravailler demain.`:"Aucune erreur !"}</div>
+    <button class="btn primary" data-a="closeSheet">Terminer</button>`;
+  const sb=subj(c.sub);
+  return `<div class="sheet-h" style="${cssVars(sb?.color||"rose")}"><span class="exam">${esc(sb?.name||"")}</span><h2 style="text-align:right;font-size:13px">${R.i+1} / ${R.queue.length}</h2><button class="icon-btn" data-a="closeSheet" aria-label="Fermer">${ico("close")}</button></div>
+    <div class="flash">${esc(c.q)}</div>
+    ${R.show?`<div class="flash ans">${esc(c.a)}</div>
+      <p class="note">Tu avais trouvé ?</p>
+      <div class="btns"><button class="btn danger" data-a="grade" data-v="0">Raté</button><button class="btn" data-a="grade" data-v="1">Difficile</button><button class="btn primary" data-a="grade" data-v="2">Facile</button></div>`
+    :`<p class="note">Cherche la réponse dans ta tête (ou à voix haute) avant de retourner la fiche.</p><button class="btn primary" data-a="reveal">Voir la réponse</button>`}
+    <p class="note">Boîte ${c.box} / 5 · ${c.box>=5?"fiche maîtrisée":"prochaine révision dans "+LEITNER[Math.min(5,c.box+1)]+" j si facile"}</p>`;
+}
+async function aiCardsGen(){
+  const txt=$("#cardNotes").value.trim();if(!txt){toast("Colle d'abord ton cours");return}
+  ui.cardSub=$("#cardSub").value;busy=true;ui.studyStatus={msg:AI?"L'IA prépare tes fiches…":"",cls:""};renderStudy();
+  try{
+    if(!AI)throw{code:"none"};
+    const r=await AI.json(`Tu aides un élève à réviser par rappel actif. À partir de ce cours, crée entre 5 et 15 fiches question/réponse courtes, précises, une notion par fiche, en français.
+Réponds UNIQUEMENT avec un tableau JSON : [{"q":"…","a":"…"}]
+
+Cours :
+${txt.slice(0,12000)}`,{modelTier:"default"});
+    if(!Array.isArray(r)||!r.length)throw{code:"empty"};
+    ui.aiCards=r.slice(0,30).map(x=>({q:String(x.q||"").slice(0,200),a:String(x.a||"").slice(0,300)})).filter(x=>x.q&&x.a);
+    ui.studyStatus={msg:"Vérifie les fiches, retire celles qui ne te plaisent pas, puis ajoute.",cls:"ok"};
+  }catch(e){
+    ui.aiCards=localCards(txt);
+    ui.studyStatus=ui.aiCards.length?{msg:(e?.code==="none"?"":aiErr(e)+" ")+"Fiches lues ligne par ligne.",cls:"ok"}
+      :{msg:(e?.code==="none"?"":aiErr(e)+" ")+"Aucune fiche reconnue. Écris une fiche par ligne : question : réponse",cls:"bad"};
+  }
+  busy=false;renderStudy();
+}
+async function makePlan(){
+  const sub=$("#planSub").value,sb=subj(sub),min=Math.max(15,r0($("#planMin").value)||45);
+  const ch=$("#planCh").value.split("\n").map(x=>x.trim()).filter(Boolean);
+  if(!ch.length){toast("Écris au moins un chapitre");return}
+  busy=true;ui.studyStatus={msg:"",cls:""};renderStudy();
+  let plan=null;
+  if(AI){
+    try{
+      const busyDays=[...Array(40)].map((_,i)=>iso(addDays(TODAY,i))).map(k=>`${k}: ${itemsFor(k).map(x=>`${x.t||"journée"} ${x.title}`).join(" | ")||"libre"}`).join("\n");
+      const r=await AI.json(`Tu es un coach de révision. Crée un planning de révision pour la matière "${sb.name}".
+Aujourd'hui : ${TK}. Examen : ${sb.exam||"pas de date, étale sur 3 semaines"}. Séances de ${min} minutes. Chapitres : ${ch.join(" ; ")}.
+Applique la répétition espacée (apprendre puis revoir à J+1, J+3, J+7), mélange les chapitres, garde la veille de l'examen pour un test blanc, maximum 2 séances par jour.
+Emploi du temps existant à éviter :\n${busyDays}
+Réponds UNIQUEMENT avec un tableau JSON : [{"date":"AAAA-MM-JJ","start":"HH:MM","title":"Apprendre · …","min":${min}}]`,{modelTier:"default"});
+      plan=(Array.isArray(r)?r:[]).filter(x=>/^\d{4}-\d\d-\d\d$/.test(x.date)&&x.date>=TK&&(!sb.exam||x.date<=sb.exam))
+        .slice(0,80).map(x=>({id:uid(),sub,date:x.date,start:/^\d\d:\d\d$/.test(x.start)?x.start:S.study.planTime,title:String(x.title||"Révision").slice(0,60),min:r0(x.min)||min,done:false}));
+      if(!plan.length)throw{code:"empty"};
+      ui.studyStatus={msg:`Planning créé par l'IA : ${plan.length} séances ajoutées à l'Agenda.`,cls:"ok"};
+    }catch(e){plan=null;ui.studyStatus={msg:aiErr(e)+" Planning créé avec la méthode intégrée.",cls:"bad"}}
+  }
+  if(!plan){plan=localStudyPlan(sub,ch,sb.exam,min);if(!ui.studyStatus.msg)ui.studyStatus={msg:`${plan.length} séances ajoutées à l'Agenda.`,cls:"ok"}}
+  S.study.plan=S.study.plan.filter(x=>!(x.sub===sub&&!x.done&&x.date>=TK)).concat(plan);
+  busy=false;save();renderStudy();
+}
+async function feynman(){
+  const topic=$("#feynTopic").value.trim(),txt=$("#feynTxt").value.trim();if(!txt){toast("Écris d'abord ton explication");return}
+  busy=true;ui.feyn="Lecture de ton explication…";renderStudy();$("#feynTopic").value=topic;$("#feynTxt").value=txt;
+  try{
+    await AI(`Un élève applique la technique de Feynman sur la notion "${topic||"(non précisée)"}". Voici son explication :\n"""${txt.slice(0,6000)}"""\n
+Réponds en français, court et bienveillant, sans markdown : 1) ce qui est juste, 2) les erreurs ou trous précis, 3) une question pour vérifier qu'il a compris. Maximum 120 mots.`,
+      {modelTier:"default",onText:({text})=>{ui.feyn=text;const el=document.querySelector("#v-study .hist div");if(el)el.innerHTML=esc(text).replace(/\n/g,"<br>")}});
+  }catch(e){ui.feyn=e?.text||aiErr(e)}
+  busy=false;renderStudy();$("#feynTopic").value=topic;$("#feynTxt").value=txt;
+}
+
 /* ================= plus / aide / réglages ================= */
 function renderMore(){
   const tile=(tab,icon,color,t,dsc)=>`<button class="menu-tile" data-a="tab" data-tab="${tab}" style="${cssVars(color)}"><div class="tile">${ico(icon)}</div><b>${t}</b><span>${dsc}</span></button>`;
   $("#v-more").innerHTML=pageHead("Plus","Tout le reste de l'appli.")+`<div class="menu-grid">
+    ${tile("journal","journal","leaf","Journal","Ta journée, une note par activité, revue de la semaine.")}
     ${tile("time","hourglass","rose","Temps restant","Jours avant la fin de la semaine, de l'année, années de vie.")}
     ${tile("stats","chart","sun","Analyses","Graphiques, séries, calories, poids.")}
     ${tile("methods","bulb","lilac","Méthodes","Les techniques pour tenir tes habitudes.")}
@@ -1232,6 +1553,8 @@ function renderHelp(){
     ${it("Grille","Une case = un jour (lundi en haut). Touche une case pour corriger un jour passé.")}
     ${it(ico("left")+ico("right"),"En haut de chaque page : change le jour affiché.")}
     ${it(ico("hourglass"),"Le temps qu'il te reste : journée, semaine, mois, année, vie.")}
+    ${it(ico("cal"),"Agenda : tout ton emploi du temps (cours, sport, révisions, examens, habitudes). « Ajouter un créneau » pour un cours ou un rendez-vous.")}
+    ${it(ico("cards"),"Études : fiches de révision qui reviennent au bon moment, minuteur Pomodoro, planning jusqu'à l'examen.")}
     ${it(ico("plus"),"Ajoute un suivi depuis le catalogue ou crée le tien.")}
     ${it("Icône","Touche l'icône colorée d'une carte pour la modifier ou la supprimer.")}
   </div>`;
@@ -1257,6 +1580,8 @@ function renderSettings(){
 /* ================= add / edit sheet ================= */
 function renderSheet(){
   if(ui.noteFor){$("#sheet").innerHTML=noteSheet();return}
+  if(ui.sheetMode==="event"){$("#sheet").innerHTML=eventSheet();return}
+  if(ui.sheetMode==="review"){$("#sheet").innerHTML=reviewSheet();return}
   const h=ui.edit?S.habits.find(x=>x.id===ui.edit):null;
   let body="";
   if(!h&&ui.addTab==="cat"){
@@ -1314,17 +1639,19 @@ function noteSheet(){
     ${past.length?`<span class="q">Notes précédentes</span><div class="hist">${past.map(([d,x])=>`<div><b>${human(d)}${x.r?" · "+FEEL[x.r-1]:""}</b><br>${esc(x.t||"")}</div>`).join("")}</div>`:""}`;
 }
 function openSheet(editId){
-  ui.noteFor=null;ui.edit=editId||null;ui.confirmDel=false;
+  ui.noteFor=null;ui.sheetMode=null;ui.edit=editId||null;ui.confirmDel=false;
   const h=editId&&S.habits.find(x=>x.id===editId);
   ui.pick=h?{color:h.color,icon:h.icon}:{color:"leaf",icon:"run"};
   renderSheet();$("#overlay").hidden=false;
 }
-const closeSheet=()=>{$("#overlay").hidden=true;ui.edit=null;ui.noteFor=null};
+const closeSheet=()=>{$("#overlay").hidden=true;ui.edit=null;ui.noteFor=null;
+  if(ui.sheetMode==="review"&&ui.tab==="study")renderStudy();ui.sheetMode=null};
+const showSheet=mode=>{ui.sheetMode=mode;ui.noteFor=null;ui.edit=null;renderSheet();$("#overlay").hidden=false};
 
 /* ================= bottom ================= */
-const TABS=[["habits","Habitudes","grid"],["sport","Sport","dumb"],["food","Nutrition","apple"],["journal","Journal","journal"],["more","Plus","menu"]];
-const VIEWS=["habits","sport","food","journal","stats","methods","time","more","help","settings"];
-const MORE=["more","stats","methods","help","settings"];
+const TABS=[["habits","Suivis","grid"],["agenda","Agenda","cal"],["sport","Sport","dumb"],["food","Repas","apple"],["study","Études","cards"],["more","Plus","menu"]];
+const VIEWS=["habits","agenda","sport","food","study","journal","stats","methods","time","more","help","settings"];
+const MORE=["more","journal","stats","methods","help","settings"];
 function renderTabs(){
   $("#tabs").innerHTML=TABS.map(([id,l,i])=>`<button class="tab" role="tab" data-a="tab" data-tab="${id}" aria-selected="${ui.tab===id||(id==="more"&&MORE.includes(ui.tab))}">${ico(i)}${l}</button>`).join("");
   VIEWS.forEach(id=>$("#v-"+id).hidden=ui.tab!==id);
@@ -1333,14 +1660,62 @@ function renderTabs(){
 function render(){
   renderTabs();
   ({habits:()=>{renderHabits();renderPet()},sport:renderSport,food:renderFood,journal:renderJournal,stats:renderStats,methods:renderMethods,
-    time:renderTime,more:renderMore,help:renderHelp,settings:renderSettings})[ui.tab]();
+    time:renderTime,more:renderMore,agenda:renderAgenda,study:renderStudy,help:renderHelp,settings:renderSettings})[ui.tab]();
 }
 
 /* ================= actions ================= */
 const H=id=>S.habits.find(h=>h.id==id);
 function setLog(h,k,v){if(parse(k)>TODAY)return;if(!v)delete h.log[k];else h.log[k]=v;save();render()}
 const A={
-  tab:d=>{ui.tab=d.tab;ui.calPick=null;ui.confirmReset=false;render();window.scrollTo(0,0)},
+  // agenda
+  agShift:d=>{ui.agSel=iso(addDays(parse(ui.agSel),+d.d));renderAgenda()},
+  agToday:()=>{ui.agSel=TK;renderAgenda()},
+  agMode:d=>{ui.agMode=d.v;renderAgenda()},
+  agDay:d=>{ui.agSel=d.k;ui.agMode="day";renderAgenda();window.scrollTo(0,0)},
+  goSport:d=>{if(d.k<=TK)ui.sel=d.k;A.tab({tab:"sport"})},
+  addEv:()=>{ui.confirmDel=false;ui.ev={id:uid(),title:"",type:"cours",days:[],date:ui.agSel,start:"09:00",end:"10:00",note:""};showSheet("event")},
+  editEv:d=>{ui.confirmDel=false;ui.ev={...S.agenda.events.find(x=>x.id===d.id)};showSheet("event")},
+  evRep:(d,el)=>{el.parentNode.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b===el));$("#evOnce").hidden=d.v!=="once";$("#evWeek").hidden=d.v==="once"},
+  evDay:(d,el)=>el.setAttribute("aria-pressed",el.getAttribute("aria-pressed")!=="true"),
+  saveEv:()=>{const once=$("#evRep [data-v=once]").getAttribute("aria-pressed")==="true";
+    const days=[...document.querySelectorAll("#evWeek [data-v]")].filter(b=>b.getAttribute("aria-pressed")==="true").map(b=>+b.dataset.v);
+    const e={id:ui.ev.id,title:$("#evTitle").value.trim()||"Sans titre",type:$("#evType").value,start:$("#evStart").value,end:$("#evEnd").value,note:$("#evNote").value.trim()};
+    if(once)e.date=$("#evDate").value||ui.agSel;else{if(!days.length){toast("Choisis au moins un jour");return}e.days=days}
+    const i=S.agenda.events.findIndex(x=>x.id===e.id);if(i>=0)S.agenda.events[i]=e;else S.agenda.events.push(e);
+    save();closeSheet();renderAgenda();toast("Créneau enregistré")},
+  delEv:()=>{if(!ui.confirmDel){ui.confirmDel=true;const b=$("[data-a=delEv]");if(b)b.textContent="Confirmer";return}
+    S.agenda.events=S.agenda.events.filter(x=>x.id!==ui.ev.id);save();closeSheet();renderAgenda();toast("Créneau supprimé")},
+  planDone:d=>{const x=S.study.plan.find(y=>y.id===d.id);x.done=!x.done;
+    if(x.done&&x.date===TK){studyLog(TK).min+=x.min;toast("Séance de révision faite !")}else if(!x.done&&x.date===TK){const g=studyLog(TK);g.min=Math.max(0,g.min-x.min)}
+    save();render()},
+  // études
+  startReview:d=>{const q=dueCards(d.sub).map(c=>c.id);if(!q.length)return;
+    for(let i=q.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[q[i],q[j]]=[q[j],q[i]]}
+    ui.review={queue:q,i:0,show:false,done:0,fails:0,again:{}};showSheet("review")},
+  reveal:()=>{ui.review.show=true;renderSheet()},
+  grade:d=>{const R=ui.review,c=S.study.cards.find(x=>x.id===R.queue[R.i]),v=+d.v;
+    if(v===0){c.box=1;c.due=iso(addDays(TODAY,1));R.fails++;if(!R.again[c.id]){R.again[c.id]=1;R.queue.push(c.id)}}
+    else if(v===1){c.due=iso(addDays(TODAY,LEITNER[Math.max(1,c.box)]))}
+    else{c.box=Math.min(5,c.box+1);c.due=iso(addDays(TODAY,LEITNER[c.box]))}
+    R.done++;studyLog(TK).cards++;R.i++;R.show=false;save();renderSheet()},
+  pomoGo:()=>{if(pomo.running){pomo.left=pomoLeft();pomo.running=false}else{pomo.end=Date.now()+pomoLeft()*1000;pomo.running=true;pomo.left=null}renderStudy()},
+  pomoReset:()=>{pomo.running=false;pomo.left=null;renderStudy()},
+  pomoSwitch:()=>{pomo.mode=pomo.mode==="work"?"break":"work";pomo.running=false;pomo.left=null;renderStudy()},
+  addCard:()=>{const q=$("#cardQ").value.trim(),a=$("#cardA").value.trim();if(!q||!a){toast("Écris la question et la réponse");return}
+    ui.cardSub=$("#cardSub").value;S.study.cards.push({id:uid(),sub:ui.cardSub,q,a,box:1,due:TK});save();renderStudy();toast("Fiche ajoutée");$("#cardQ").focus()},
+  aiCards:()=>aiCardsGen(),
+  aiCardDrop:d=>{ui.aiCards.splice(+d.i,1);renderStudy()},
+  aiCardsAdd:()=>{const sub=ui.cardSub||$("#cardSub").value;ui.aiCards.forEach(c=>S.study.cards.push({id:uid(),sub,q:c.q,a:c.a,box:1,due:TK}));
+    toast(`${ui.aiCards.length} fiches ajoutées`);ui.aiCards=[];ui.studyStatus={msg:"",cls:""};save();renderStudy()},
+  makePlan:()=>makePlan(),
+  feynman:()=>feynman(),
+  addSub:()=>{const name=$("#subName").value.trim();if(!name){toast("Donne un nom à la matière");return}
+    const cols=Object.keys(PAL);S.study.subjects.push({id:uid(),name,color:cols[S.study.subjects.length%cols.length],exam:$("#subExam").value||""});save();renderStudy();toast("Matière ajoutée")},
+  delSub:d=>{if(ui.confirmSub!==d.id){ui.confirmSub=d.id;renderStudy();return}
+    S.study.subjects=S.study.subjects.filter(x=>x.id!==d.id);S.study.cards=S.study.cards.filter(x=>x.sub!==d.id);S.study.plan=S.study.plan.filter(x=>x.sub!==d.id);
+    ui.confirmSub=null;save();renderStudy();toast("Matière supprimée")},
+  gear:d=>{const g=S.workout.profile.gear;S.workout.profile.gear=g.includes(d.g)?g.filter(x=>x!==d.g):[...g,d.g];S.workout.gearNotice=true;save();renderSport()},
+  tab:d=>{ui.tab=d.tab;ui.confirmSub=null;ui.calPick=null;ui.confirmReset=false;render();window.scrollTo(0,0)},
   todo:()=>{ui.tab="habits";ui.cat="__left";ui.sel=TK;render();window.scrollTo(0,0)},
   date:d=>{ui.sel=d.k;render()},
   cat:d=>{ui.cat=d.cat;render()},
@@ -1351,13 +1726,13 @@ const A={
   inc:d=>{const h=H(d.id),before=score(h,ui.sel);setLog(h,ui.sel,(h.log[ui.sel]||0)+(h.step||1));if(before<1&&score(h,ui.sel)===1)cheer()},
   nextQuote:()=>{ui.qShift++;renderHabits()},
   dayShift:d=>{const n=iso(addDays(parse(ui.sel),+d.d));ui.sel=n>TK?TK:n;render()},
-  note:d=>{ui.noteFor={id:d.id,k:ui.sel};ui.noteRate=S.notes[d.id]?.[ui.sel]?.r||0;renderSheet();$("#overlay").hidden=false},
+  note:d=>{ui.sheetMode=null;ui.noteFor={id:d.id,k:ui.sel};ui.noteRate=S.notes[d.id]?.[ui.sel]?.r||0;renderSheet();$("#overlay").hidden=false},
   noteRate:(d,el)=>{ui.noteRate=ui.noteRate===+d.v?0:+d.v;el.parentNode.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.v===ui.noteRate))},
   saveNote:()=>{const {id,k}=ui.noteFor,t=$("#hNoteTxt").value.trim();setNote(id,k,{t,r:ui.noteRate});closeSheet();render();toast("Note enregistrée")},
   hrate:d=>{const cur=S.notes[d.id]?.[ui.sel]||{};setNote(d.id,ui.sel,{...cur,r:cur.r===+d.v?0:+d.v});renderJournal()},
   dec:d=>{const h=H(d.id);setLog(h,ui.sel,Math.max(0,(h.log[ui.sel]||0)-(h.step||1)))},
   cell:d=>{const h=H(d.id);
-    if(h.type==="auto"){ui.sel=d.k;A.tab({tab:h.src==="workout"?"sport":"food"});return}
+    if(h.type==="auto"){ui.sel=d.k;A.tab({tab:{workout:"sport",study:"study"}[h.src]||"food"});return}
     if(h.type==="count"){setLog(h,d.k,score(h,d.k)===1?0:h.target);return}
     setLog(h,d.k,h.log[d.k]===1?0:1)},
   mood:d=>{(S.journal[ui.sel]||(S.journal[ui.sel]={})).mood=+d.v;save();renderJournal()},
@@ -1414,10 +1789,10 @@ const A={
     if(DL){DL.save({filename:name,data}).then(()=>toast("Sauvegarde prête")).catch(e=>{if(e?.code!=="cancelled")toast("Sauvegarde impossible")});return}
     if(window.top===window.self){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast("Sauvegarde téléchargée");return}
     navigator.clipboard?.writeText(data).then(()=>toast("Données copiées dans le presse-papiers"),()=>toast("Sauvegarde impossible ici"))},
-  confirmImport:()=>{S=ui.pendingImport.data;delete S.exported;if(!S.notes)S.notes={};if(!S.settings)S.settings={birth:iso(new Date(TODAY.getFullYear()-25,0,1)),life:80};
+  confirmImport:()=>{S=ui.pendingImport.data;delete S.exported;if(!S.notes)S.notes={};migrate();if(!S.settings)S.settings={birth:iso(new Date(TODAY.getFullYear()-25,0,1)),life:80};
     ui.pendingImport=null;save();render();toast("Données restaurées")},
   reset:()=>{if(!ui.confirmReset){ui.confirmReset=true;render();return}
-    const fresh=sampleState();S={v:2,habits:[],journal:{},week:{},notes:{},settings:S.settings,food:{...fresh.food,log:{},notes:{},weight:{}},workout:{...fresh.workout,cal:{}}};
+    const fresh=sampleState();S={v:2,habits:[],journal:{},week:{},notes:{},settings:S.settings,food:{...fresh.food,log:{},notes:{},weight:{}},workout:{...fresh.workout,cal:{}},agenda:{events:[],workoutTime:"18:00"},study:{subjects:[],cards:[],plan:[],log:{},planTime:"17:00",pomo:{work:25,brk:5}}};
     planWeeks(S.workout,4,TODAY);ui.confirmReset=false;save();render();toast("Tout est effacé. Ajoute tes premiers suivis avec +")}
 };
 // re-render sans perdre ce qui est tapé dans le formulaire
@@ -1466,6 +1841,12 @@ document.addEventListener("change",e=>{
   if(d.c==="ex"){const ex=P.days[+d.d].ex[+d.i];ex[d.f]=d.f==="sets"?Math.max(1,r0(t.value)):d.f==="kg"?+t.value||0:t.value;save();return}
   if(d.c==="prof"){S.workout.profile[d.f]=t.value;save();return}
   if(d.c==="hist"){ui.hist=t.value;renderJournal();return}
+  if(d.c==="wTime"){S.agenda.workoutTime=t.value||"18:00";save();return}
+  if(d.c==="pTime"){S.study.planTime=t.value||"17:00";save();return}
+  if(d.c==="pomoSub"){pomo.sub=t.value;return}
+  if(d.c==="pomoW"){S.study.pomo.work=Math.max(5,Math.min(90,r0(t.value)||25));if(!pomo.running)pomo.left=null;save();renderStudy();return}
+  if(d.c==="pomoB"){S.study.pomo.brk=Math.max(1,Math.min(30,r0(t.value)||5));if(!pomo.running)pomo.left=null;save();renderStudy();return}
+  if(d.c==="exam"){const x=subj(d.id);if(x){x.exam=t.value;save();renderStudy()}return}
   if(d.c==="birth"){if(t.value){S.settings.birth=t.value;save();render()}return}
   if(d.c==="life"){S.settings.life=Math.max(30,Math.min(120,r0(t.value)||80));save();render();return}
   if(d.c==="prof2"){S.food.profile[d.f]=t.value;save();return}

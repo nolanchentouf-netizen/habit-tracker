@@ -3,7 +3,7 @@
 Appli perso pour créer des habitudes, style pixel / rétro. Tout est dans `index.html` (un seul fichier). Les données restent dans le navigateur.
 
 ## Navigation (pensée pour le téléphone)
-- En bas : **Habitudes · Sport · Nutrition · Journal · Plus**.
+- En bas : **Suivis · Agenda · Sport · Repas · Études · Plus** (Journal, Temps restant, Analyses, Méthodes, Aide, Réglages sont dans Plus).
 - En haut : **sablier** = temps restant, **+** = ajouter un suivi.
 - Chaque page a un titre, une phrase qui explique quoi faire et des flèches pour changer de jour.
 - **Plus** : Temps restant, Analyses, Méthodes, Aide (à quoi sert chaque bouton), Réglages.
@@ -34,6 +34,9 @@ Hors de Claude, l'IA n'est pas disponible : le coach et l'estimation des repas u
   - calendrier mensuel : séances prévues, faites, manquées ; touche un jour pour changer la séance ; « Planifier 4 semaines » ; export `.ics` vers ton agenda (dans Claude) ;
   - **Coach IA** : génère un programme selon objectif, niveau, jours, durée, matériel et tes infos (blessures…), et le modifie sur demande (« remplace le squat, j'ai mal au genou »). Bouton Annuler.
   - programme entièrement modifiable : jours d'entraînement, séances, exercices, séries, reps, kg.
+- **Agenda** : emploi du temps centralisé, vue jour et semaine. Cours, travail, rendez-vous (une fois ou chaque semaine), séances de sport, séances de révision, examens et habitudes du jour.
+- **Études** : fiches de révision avec répétition espacée (boîtes de Leitner : 1, 2, 4, 8, 16 jours), minuteur Pomodoro, fiches créées par l'IA depuis un cours (ou une par ligne « question : réponse »), planning de révision jusqu'à l'examen (apprendre puis revoir à J+1, J+3, J+7, test blanc la veille) ajouté à l'Agenda, technique de Feynman vérifiée par l'IA, matières et dates d'examen, conseils de révision.
+- **Matériel** (Sport → Coach) : haltères, chaise romaine, poutre d'escalade, rétracteur et extenseur pour doigts cochés par défaut. Le programme les utilise toujours, avec un bloc doigts / avant-bras en fin de séance.
 - **Nutrition** : calories, protéines, glucides, lipides par rapport à tes objectifs ; ajout par aliment (base de 33 aliments, valeurs recalculées selon la quantité) ou à la main ; « Décris ton repas » estimé par l'IA ; calcul des objectifs (Mifflin-St Jeor) ; poids du matin et notes du jour.
 - **Journal** : humeur et note du jour, **une note + un ressenti par activité** (habitudes, séance, nutrition), historique des notes par activité, revue de la semaine. Le crayon sur chaque carte écrit directement la note.
 - **Temps restant** : heures avant minuit, jours avant la fin de la semaine / du mois / de l'année, années, semaines et jours de vie estimés (date de naissance + espérance de vie), grille de ta vie en semaines.
