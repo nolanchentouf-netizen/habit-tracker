@@ -658,6 +658,8 @@ if(!S.notes)S.notes={};
 if(!S.settings)S.settings={birth:iso(new Date(TODAY.getFullYear()-25,0,1)),life:80};
 migrate();
 function migrate(){
+  if(!S.settings.firstUse){ // date de la plus ancienne donnée : le rappel apparaît tout de suite si l'appli sert déjà
+    const ks=[...Object.keys(S.food?.log||{}),...S.habits.flatMap(h=>Object.keys(h.log||{})),TK].sort();S.settings.firstUse=ks[0]}
   if(!S.workout.profile.gear){S.workout.profile.gear=[...MY_GEAR];S.workout.gearNotice=true}
   if(!S.agenda)S.agenda={events:[],workoutTime:"18:00"};
   if(!S.study)S.study={subjects:[],cards:[],plan:[],log:{},planTime:"17:00",pomo:{work:25,brk:5}};
@@ -762,6 +764,23 @@ const missedTwiceRisk=h=>!h.freq&&!score(h,TK)&&!score(h,iso(addDays(TODAY,-1)))
 function rate(h,days){let n=0;for(let i=0;i<days;i++)n+=score(h,iso(addDays(TODAY,-i)))?1:0;return Math.round(n/days*100)}
 function xpTotal(){let x=0;S.habits.forEach(h=>{for(let i=0;i<150;i++)x+=score(h,iso(addDays(TODAY,-i)))*10});return x}
 function weekDone(h,k){return h.freq&&weekCount(h,mondayOf(parse(k)))>=h.freq}
+
+/* ================= rappel de sauvegarde ================= */
+const BACKUP_EVERY=7;
+const daysSince=k=>k?Math.round((TODAY-parse(k))/DAY):null;
+function backupDue(){
+  const st=S.settings,last=daysSince(st.lastBackup);
+  if(st.backupSnooze&&st.backupSnooze>TK)return false;
+  return last==null?daysSince(st.firstUse)>=3:last>=BACKUP_EVERY;
+}
+function backupText(){const n=daysSince(S.settings.lastBackup);return n==null?"jamais":n===0?"aujourd'hui":n===1?"hier":`il y a ${n} jours`}
+function backupBanner(){
+  if(!backupDue())return"";
+  return `<div class="alert" style="display:flex;flex-direction:column;gap:8px;text-transform:none;font-family:var(--font-text);font-size:19px;letter-spacing:0">
+    <span><b style="font-family:var(--font-pixel);font-size:11px;letter-spacing:.06em">SAUVEGARDE</b><br>Dernière sauvegarde : ${backupText()}. Tes données ne sont que sur ce téléphone : garde une copie.</span>
+    <div class="btns"><button class="btn small primary" data-a="exportData">Sauvegarder maintenant</button><button class="btn small" data-a="snoozeBackup">Dans 3 jours</button></div></div>`;
+}
+function markBackup(){S.settings.lastBackup=TK;delete S.settings.backupSnooze;save();render()}
 
 /* ================= motivation ================= */
 const QUOTES=["Petit à petit, l'oiseau fait son nid.","Le meilleur moment pour commencer, c'était hier. Le deuxième meilleur, c'est maintenant.",
@@ -868,7 +887,7 @@ function renderLeft(){
   return html;
 }
 function renderHabits(){
-  $("#habitsTop").innerHTML=pageHead("Habitudes","Touche ✓ quand c'est fait. Le crayon ajoute une note. Touche l'icône pour modifier.")+dateBar()+
+  $("#habitsTop").innerHTML=pageHead("Habitudes","Touche ✓ quand c'est fait. Le crayon ajoute une note. Touche l'icône pour modifier.")+backupBanner()+dateBar()+
     `<div class="quote"><p><small>PHRASE DU JOUR</small>${esc(quoteOfDay())}</p><button class="icon-btn" data-a="nextQuote" aria-label="Autre phrase">${ico("undo")}</button></div>`;
   renderFilters();
   if(ui.cat==="__left"){$("#cards").innerHTML=renderLeft();return}
@@ -1567,6 +1586,7 @@ function renderSettings(){
     </div><p class="note">Sert au calcul du temps restant.</p></div>
     <div class="panel"><h2 class="h2 fg">Données</h2>
       <p class="note">Tes données restent sur ce téléphone, dans cette version de l'appli. Sauvegarde-les pour les retrouver sur l'appli installée ou un autre téléphone.</p>
+      <p class="note ${backupDue()?"bad":"ok"}">Dernière sauvegarde : ${backupText()}. Un rappel s'affiche sur l'écran Habitudes tous les ${BACKUP_EVERY} jours.</p>
       <button class="btn" data-a="exportData">Sauvegarder mes données (.json)</button>
       <label class="btn" for="importFile" style="cursor:pointer">Restaurer une sauvegarde</label>
       <input type="file" id="importFile" accept=".json,application/json" hidden>
@@ -1786,11 +1806,12 @@ const A={
     S.food.goals={kcal,p:pr,f:fat,c:Math.max(0,r0((kcal-pr*4-fat*9)/4))};save();renderFood();toast(`Objectif : ${kcal} kcal · ${pr} g de protéines`)},
   exportData:()=>{
     const data=JSON.stringify({...S,exported:TK}),name=`habitpix-sauvegarde-${TK}.json`;
-    if(DL){DL.save({filename:name,data}).then(()=>toast("Sauvegarde prête")).catch(e=>{if(e?.code!=="cancelled")toast("Sauvegarde impossible")});return}
-    if(window.top===window.self){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast("Sauvegarde téléchargée");return}
-    navigator.clipboard?.writeText(data).then(()=>toast("Données copiées dans le presse-papiers"),()=>toast("Sauvegarde impossible ici"))},
+    if(DL){DL.save({filename:name,data}).then(()=>{markBackup();toast("Sauvegarde prête")}).catch(e=>{if(e?.code!=="cancelled")toast("Sauvegarde impossible")});return}
+    if(window.top===window.self){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);markBackup();toast("Sauvegarde téléchargée : range-la dans Drive ou envoie-la-toi par mail");return}
+    navigator.clipboard?.writeText(data).then(()=>{markBackup();toast("Données copiées dans le presse-papiers")},()=>toast("Sauvegarde impossible ici"))},
+  snoozeBackup:()=>{S.settings.backupSnooze=iso(addDays(TODAY,3));save();render()},
   confirmImport:()=>{S=ui.pendingImport.data;delete S.exported;if(!S.notes)S.notes={};migrate();if(!S.settings)S.settings={birth:iso(new Date(TODAY.getFullYear()-25,0,1)),life:80};
-    ui.pendingImport=null;save();render();toast("Données restaurées")},
+    ui.pendingImport=null;S.settings.lastBackup=TK;save();render();toast("Données restaurées")},
   reset:()=>{if(!ui.confirmReset){ui.confirmReset=true;render();return}
     const fresh=sampleState();S={v:2,habits:[],journal:{},week:{},notes:{},settings:S.settings,food:{...fresh.food,log:{},notes:{},weight:{}},workout:{...fresh.workout,cal:{}},agenda:{events:[],workoutTime:"18:00"},study:{subjects:[],cards:[],plan:[],log:{},planTime:"17:00",pomo:{work:25,brk:5}}};
     planWeeks(S.workout,4,TODAY);ui.confirmReset=false;save();render();toast("Tout est effacé. Ajoute tes premiers suivis avec +")}
