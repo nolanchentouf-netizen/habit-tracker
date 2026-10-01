@@ -2,9 +2,15 @@
 
 Appli perso pour créer des habitudes, style pixel / rétro. Tout est dans `index.html` (un seul fichier). Les données restent dans le navigateur.
 
+## Navigation (pensée pour le téléphone)
+- En bas : **Habitudes · Sport · Nutrition · Journal · Plus**.
+- En haut : **sablier** = temps restant, **+** = ajouter un suivi.
+- Chaque page a un titre, une phrase qui explique quoi faire et des flèches pour changer de jour.
+- **Plus** : Temps restant, Analyses, Méthodes, Aide (à quoi sert chaque bouton), Réglages.
+
 ## Onglets
 - **Habitudes** : cartes avec grille sur 22 semaines, série 🔥, filtres par catégorie, filtre « Restant » (Matin / Midi / Soir), recherche, tri.
-  - Bouton **+** : catalogue de 36 suivis prêts à ajouter (santé, sport, nutrition, esprit, productivité, maison, social, finances) ou suivi personnalisé.
+  - Bouton **+** : catalogue de 47 suivis prêts à ajouter (santé, sport, nutrition, esprit, productivité, maison, social, finances) ou suivi personnalisé.
   - 3 types de suivi : **oui / non**, **compteur** (ex. 8 verres d'eau, 50 pompes) et **auto** (protéines, calories, séance de sport, remplis depuis les autres onglets).
   - Touche l'icône d'une carte pour la modifier ou la supprimer.
 - **Sport** :
@@ -13,7 +19,9 @@ Appli perso pour créer des habitudes, style pixel / rétro. Tout est dans `inde
   - **Coach IA** : génère un programme selon objectif, niveau, jours, durée, matériel et tes infos (blessures…), et le modifie sur demande (« remplace le squat, j'ai mal au genou »). Bouton Annuler.
   - programme entièrement modifiable : jours d'entraînement, séances, exercices, séries, reps, kg.
 - **Nutrition** : calories, protéines, glucides, lipides par rapport à tes objectifs ; ajout par aliment (base de 33 aliments, valeurs recalculées selon la quantité) ou à la main ; « Décris ton repas » estimé par l'IA ; calcul des objectifs (Mifflin-St Jeor) ; poids du matin et notes du jour.
-- **Journal** : humeur, note du jour, revue de la semaine.
+- **Journal** : humeur et note du jour, **une note + un ressenti par activité** (habitudes, séance, nutrition), historique des notes par activité, revue de la semaine. Le crayon sur chaque carte écrit directement la note.
+- **Temps restant** : heures avant minuit, jours avant la fin de la semaine / du mois / de l'année, années, semaines et jours de vie estimés (date de naissance + espérance de vie), grille de ta vie en semaines.
+- **Phrase de motivation** du jour sur l'écran Habitudes, et un encouragement à chaque case cochée.
 - **Analyses** : séances sur 30 jours, calories moyennes, poids, graphiques 7 jours (habitudes, calories, protéines), statistiques par suivi, remise à zéro.
 - **Méthodes** (ampoule en haut) : les techniques utilisées par l'appli.
 
